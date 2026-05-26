@@ -1540,10 +1540,12 @@ function yakitKaydet() {
   if(!sofor||!plaka||!litre){showToast("Zorunlu alanları doldurun!","error");return;}
   const fiyat=parseFloat(DB.litreFiyati)||0;
   const simdi=new Date();
+  // Eğer tarih bugün ise saati yaz, değilse boş bırak
+  const bugunStr = bugunTR ? bugunTR() : simdi.toISOString().split("T")[0];
   DB.yakitlar.unshift({
     id:Date.now(), sofor, plaka, tarih, litre,
     tutar: fiyat>0?litre*fiyat:0,
-    saat: simdi.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}),
+    saat: tarih===bugunStr ? simdi.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}) : "",
     kaydeden: KUL.isim
   });
   dbKaydet();
