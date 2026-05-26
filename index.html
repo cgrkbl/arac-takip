@@ -2142,7 +2142,7 @@ async function isExcel() {
   for(var r=0; r<maxSatir; r++) {
     var rowNum = r + 4;
     var sonSatir = r === maxSatir-1;
-    ws.getRow(rowNum).height = 20;
+    ws.getRow(rowNum).height = 25;
     IS_KATEGORILER.forEach(function(kat, i) {
       var cell = ws.getCell(rowNum, i+2);
       cell.value = (katVeriler[kat]||[])[r] || "";
