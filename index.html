@@ -2094,7 +2094,7 @@ async function isExcel() {
       .filter(function(i){ return i.kategori===kat; })
       .map(function(i){ return i.firma + (i.miktar?" ("+i.miktar+")":""); });
   });
-  var maxSatir = Math.max(25, Math.max.apply(null, IS_KATEGORILER.map(function(k){ return (katVeriler[k]||[]).length; })));
+  var maxSatir = Math.max(1, Math.max.apply(null, IS_KATEGORILER.map(function(k){ return (katVeriler[k]||[]).length; })));
 
   var wb = new ExcelJS.Workbook();
   var ws = wb.addWorksheet("Araç Programı");
