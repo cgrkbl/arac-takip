@@ -114,7 +114,6 @@ textarea{resize:vertical;}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 </head>
 <body>
@@ -256,7 +255,6 @@ let AKTIF_TAB = "rapor";
 let PIN = "";
 let LOGIN_MOD = null;
 let MAP_OBJ = null;
-let MAP_LAYERS = [];
 let FILTRE_SOFOR = "Tümü";
 let FILTRE_BAS = "";
 let FILTRE_BIT = "";
@@ -668,8 +666,6 @@ function cikisKaydet(soforAdi) {
   const birim = (document.getElementById("f-birim")||{}).value || "kg";
   const aciklama = (document.getElementById("f-aciklama")||{}).value || "";
 
-  // Debug için kontrol
-  console.log("Çıkış kaydet:", {sofor, cikisId, varisId, km, yuk, plaka});
   if(!sofor||!cikisId||!varisId||!km||!yuk) { 
     let eksik = [];
     if(!sofor) eksik.push("Şoför");
@@ -1929,7 +1925,7 @@ function dbKaydet() {
       adminPin: ADMIN_PIN,
       yakitPin: YAKIT_PIN,
     }));
-  } catch(e) { console.log("Kaydetme hatası:", e); }
+  } catch(e) { }
 }
 
 
@@ -2194,7 +2190,7 @@ window.addEventListener("load", ()=>{
       if(parsed.adminPin) ADMIN_PIN = parsed.adminPin;
       if(parsed.yakitPin) YAKIT_PIN = parsed.yakitPin;
     }
-  } catch(e) { console.log("DB yükleme hatası:", e); }
+  } catch(e) { }
   if('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
   }
