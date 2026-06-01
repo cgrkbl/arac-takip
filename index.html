@@ -345,10 +345,13 @@ function loginGiris() {
   }
 }
 
-function girisYap(kul) {
+async function girisYap(kul) {
   KUL = kul;
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
+  // Giriş sonrası yükle
+  showToast("Veriler yükleniyor...");
+  await dbYukle();
   document.getElementById("header-sub").textContent =
     kul.rol==="admin" ? "🔑 Yönetici" :
     kul.rol==="yakit" ? "⛽ Yakıt Personeli" : "🧑‍✈️ "+kul.isim;
