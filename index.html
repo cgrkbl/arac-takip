@@ -421,6 +421,10 @@ function loginGiris() {
 
 async function girisYap(kul) {
   KUL = kul;
+  // Oturumu kaydet
+  sessionStorage.setItem("kul", JSON.stringify(kul));
+  sessionStorage.setItem("aktif_menu", AKTIF_MENU);
+  sessionStorage.setItem("aktif_tab", AKTIF_TAB);
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
   // Giriş sonrası yükle
@@ -448,6 +452,7 @@ async function girisYap(kul) {
 
 function logout() {
   KUL = null;
+  sessionStorage.removeItem("kul");
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
   document.getElementById("login-buttons").style.display = "block";
@@ -467,6 +472,7 @@ const MENU_GRUPLARI = {
 
 function altMenuSec(menu) {
   AKTIF_MENU = menu;
+  sessionStorage.setItem("aktif_menu", menu);
   const tablar = MENU_GRUPLARI[menu];
   renderTabBar(tablar);
   renderBottomNav();
@@ -509,6 +515,7 @@ function renderSoforTabBar() {
 
 function tabSec(id) {
   AKTIF_TAB = id;
+  sessionStorage.setItem("aktif_tab", id);
   // tab bar güncelle
   document.querySelectorAll(".tab-btn").forEach(b=>{
     b.classList.toggle("active", b.textContent.trim().startsWith(
@@ -2875,28 +2882,26 @@ async function talepSil(id) {
 window.addEventListener("load", async ()=>{
   logo();
   document.querySelectorAll("#login-logo-img,#header-logo-img").forEach(img=>img.src=LOGO_SRC);
-  await dbYukle();
-  // localStorage yedek
-  try {
-    var saved = localStorage.getItem("kucuker_db");
-    if(saved) {
-      var parsed = JSON.parse(saved);
-      if(parsed.soforler) DB.soforler = parsed.soforler;
-      if(parsed.araclar) DB.araclar = parsed.araclar;
-      if(parsed.konumlar) DB.konumlar = parsed.konumlar;
-      if(parsed.fabrika) DB.fabrika = parsed.fabrika;
-      if(parsed.aktifSeferler) DB.aktifSeferler = parsed.aktifSeferler;
-      if(parsed.tamamlananlar) DB.tamamlananlar = parsed.tamamlananlar;
-      if(parsed.yakitlar) DB.yakitlar = parsed.yakitlar;
-      if(parsed.bakimlar) DB.bakimlar = parsed.bakimlar;
-      if(parsed.isler) DB.isler = parsed.isler;
-      if(parsed.litreFiyati) DB.litreFiyati = parsed.litreFiyati;
-      if(parsed.adminPin) ADMIN_PIN = parsed.adminPin;
-      if(parsed.yakitPin) YAKIT_PIN = parsed.yakitPin;
-    }
-  } catch(e) { }
+  localStorage.removeItem("kucuker_db");
+
+  // Oturum kontrolü - yenileme sonrası otomatik giriş
+  var savedKul = sessionStorage.getItem("kul");
+  if(savedKul) {
+    try {
+      var kul = JSON.parse(savedKul);
+      var savedMenu = sessionStorage.getItem("aktif_menu") || "ana";
+      var savedTab = sessionStorage.getItem("aktif_tab") || "rapor";
+      await girisYap(kul);
+      if(kul.rol==="admin") {
+        altMenuSec(savedMenu);
+        tabSec(savedTab);
+      }
+      return;
+    } catch(e) { sessionStorage.removeItem("kul"); }
+  }
+
   if('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    navigator.serviceWorker.register('/arac-takip/sw.js').catch(()=>{});
   }
 });
 </script>
