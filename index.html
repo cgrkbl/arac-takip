@@ -1637,6 +1637,13 @@ async function yakitKaydet() {
   renderYakit();
 }
 
+async function yakitSil(id) {
+  try { await yakitSilDB(id); } catch(e) {}
+  DB.yakitlar = DB.yakitlar.filter(function(y){ return y.id!==id; });
+  showToast("Yakıt kaydı silindi.");
+  renderYakitListe();
+}
+
 function renderYakitListe() {
   const isAdmin = KUL.rol==="admin";
   const tLitre = DB.yakitlar.reduce((a,y)=>a+y.litre,0);
@@ -1660,6 +1667,7 @@ function renderYakitListe() {
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <span class="badge badge-green">${y.litre} lt</span>
             ${isAdmin&&y.tutar>0?`<span class="badge badge-orange">${y.tutar.toLocaleString()} TL</span>`:""}
+            ${isAdmin?`<button onclick="yakitSil(${y.id})" style="background:none;border:none;color:#ff453a;font-size:16px;cursor:pointer;padding:0">🗑️</button>`:""}
           </div>
         </div>
         <div style="background:#1c1c1e;border-radius:8px;padding:8px 10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:#636366">
@@ -2207,6 +2215,8 @@ async function yakitEkleDB(y) {
   }).select().single();
   if(error) throw error; return data;
 }
+async function yakitSilDB(id) { await supa.from('yakitlar').delete().eq('id',id); }
+
 async function bakimEkleDB(b) {
   const {data,error} = await supa.from('bakimlar').insert({
     plaka:b.plaka, tur:b.tur, tarih:b.tarih,
