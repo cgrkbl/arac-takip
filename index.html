@@ -1939,7 +1939,81 @@ function excelAktar() {
 // ═══════════════════════════════════════════
 const SUPA_URL = "https://xwqaloxiebliccrjmgyo.supabase.co";
 const SUPA_KEY = "sb_publishable_BLp6PmrBVk2SJOVzwb0eDA_wsR3lpcX";
-const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Supabase REST API - CDN gerektirmez
+const supa = {
+  from: function(table) {
+    return new SupaQuery(table);
+  }
+};
+
+class SupaQuery {
+  constructor(table) {
+    this.table = table;
+    this._filters = [];
+    this._order = null;
+    this._limit = null;
+    this._single = false;
+    this._select = '*';
+    this._insertData = null;
+    this._updateData = null;
+    this._deleteMode = false;
+  }
+  select(s) { this._select = s||'*'; return this; }
+  eq(col, val) { this._filters.push({col, val, op:'eq'}); return this; }
+  order(col, opts) { this._order = {col, asc: opts&&opts.ascending!==false?true:false}; return this; }
+  limit(n) { this._limit = n; return this; }
+  single() { this._single = true; return this; }
+  insert(data) { this._insertData = data; return this; }
+  update(data) { this._updateData = data; return this; }
+  delete() { this._deleteMode = true; return this; }
+
+  async _exec() {
+    let url = SUPA_URL + '/rest/v1/' + this.table + '?select=' + this._select;
+    this._filters.forEach(f => { url += '&' + f.col + '=eq.' + encodeURIComponent(f.val); });
+    if(this._order) url += '&order=' + this._order.col + (this._order.asc?'.asc':'.desc');
+    if(this._limit) url += '&limit=' + this._limit;
+
+    const headers = {
+      'apikey': SUPA_KEY,
+      'Authorization': 'Bearer ' + SUPA_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': this._single ? 'return=representation' : 'return=representation'
+    };
+
+    let method = 'GET';
+    let body = null;
+
+    if(this._insertData) {
+      method = 'POST';
+      body = JSON.stringify(this._insertData);
+      headers['Prefer'] = 'return=representation';
+      url = SUPA_URL + '/rest/v1/' + this.table;
+    } else if(this._updateData) {
+      method = 'PATCH';
+      body = JSON.stringify(this._updateData);
+      headers['Prefer'] = 'return=representation';
+      url = SUPA_URL + '/rest/v1/' + this.table;
+      this._filters.forEach(f => { url += (url.includes('?')?'&':'?') + f.col + '=eq.' + encodeURIComponent(f.val); });
+    } else if(this._deleteMode) {
+      method = 'DELETE';
+      url = SUPA_URL + '/rest/v1/' + this.table;
+      this._filters.forEach(f => { url += (url.includes('?')?'&':'?') + f.col + '=eq.' + encodeURIComponent(f.val); });
+    }
+
+    try {
+      const res = await fetch(url, {method, headers, body});
+      const data = await res.json();
+      if(!res.ok) return {data: null, error: data};
+      if(this._single) return {data: Array.isArray(data)?data[0]:data, error: null};
+      return {data, error: null};
+    } catch(e) {
+      return {data: null, error: e};
+    }
+  }
+
+  then(resolve, reject) { return this._exec().then(resolve, reject); }
+}
 
 async function dbYukle() {
   try {
