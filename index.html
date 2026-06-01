@@ -145,6 +145,10 @@ textarea{resize:vertical;}
         <input type="text" id="t-isim" placeholder="Ahmet Yılmaz"/>
       </div>
       <div class="field" style="margin-bottom:12px">
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Departman *</label>
+        <input type="text" id="t-departman" placeholder="Örn: Lojistik, Satış, Üretim"/>
+      </div>
+      <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Nereye Gidecek *</label>
         <input type="text" id="t-nereye" placeholder="İstanbul, Merkez Depo"/>
       </div>
@@ -2216,7 +2220,7 @@ async function mesaiSilDB(id) { await supa.from('mesailer').delete().eq('id',id)
 
 async function talepEkleDB(t) {
   const {data,error} = await supa.from('talepler').insert({
-    isim:t.isim, nereye:t.nereye, tarih:t.tarih,
+    isim:t.isim, departman:t.departman||"", nereye:t.nereye, tarih:t.tarih,
     saat:t.saat, aciklama:t.aciklama||"", durum:'Bekliyor'
   }).select().single();
   if(error) throw error; return data;
@@ -2669,12 +2673,22 @@ function mesaiHizliFiltre(gun) {
 function talepEkraniGoster() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("talep-screen").style.display = "flex";
+  // Tarih ve saati otomatik doldur
+  var simdi = new Date();
+  var yil = simdi.getFullYear();
+  var ay = String(simdi.getMonth()+1).padStart(2,"0");
+  var gun = String(simdi.getDate()).padStart(2,"0");
+  var saat = String(simdi.getHours()).padStart(2,"0");
+  var dakika = String(simdi.getMinutes()).padStart(2,"0");
+  document.getElementById("t-tarih").value = yil+"-"+ay+"-"+gun;
+  document.getElementById("t-saat").value = saat+":"+dakika;
 }
 
 function talепYeniGonder() {
   document.getElementById("talep-form").style.display = "block";
   document.getElementById("talep-basari").style.display = "none";
   document.getElementById("t-isim").value = "";
+  document.getElementById("t-departman").value = "";
   document.getElementById("t-nereye").value = "";
   document.getElementById("t-tarih").value = "";
   document.getElementById("t-saat").value = "";
@@ -2689,17 +2703,18 @@ function talepEkraniGizle() {
 
 async function talепGonder() {
   var isim = document.getElementById("t-isim").value.trim();
+  var departman = document.getElementById("t-departman").value.trim();
   var nereye = document.getElementById("t-nereye").value.trim();
   var tarih = document.getElementById("t-tarih").value;
   var saat = document.getElementById("t-saat").value;
   var aciklama = document.getElementById("t-aciklama").value.trim();
-  if(!isim||!nereye||!tarih||!saat) { 
+  if(!isim||!departman||!nereye||!tarih||!saat) { 
     document.getElementById("talep-mesaj").textContent = "Zorunlu alanları doldurun!";
     document.getElementById("talep-mesaj").style.color = "#ff453a";
     return; 
   }
   try {
-    await talepEkleDB({isim, nereye, tarih, saat, aciklama});
+    await talepEkleDB({isim, departman, nereye, tarih, saat, aciklama});
     document.getElementById("talep-form").style.display = "none";
     document.getElementById("talep-basari").style.display = "block";
   } catch(e) {
@@ -2714,19 +2729,20 @@ function renderTalepler() {
     <div style="display:flex;gap:10px;margin-bottom:12px">
       <div class="kpi-card" style="flex:1"><div class="kpi-icon">📋</div><div class="kpi-val" style="color:#ff9f0a">${bekleyen}</div><div class="kpi-label">Bekleyen</div></div>
       <div class="kpi-card" style="flex:1"><div class="kpi-icon">✅</div><div class="kpi-val" style="color:#30d158">${DB.talepler.filter(function(t){return t.durum==="Onaylandı";}).length}</div><div class="kpi-label">Onaylanan</div></div>
+      <div class="kpi-card" style="flex:1"><div class="kpi-icon">❌</div><div class="kpi-val" style="color:#ff453a">${DB.talepler.filter(function(t){return t.durum==="Reddedildi";}).length}</div><div class="kpi-label">Reddedilen</div></div>
       <div class="kpi-card" style="flex:1"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:#0a84ff">${DB.talepler.length}</div><div class="kpi-label">Toplam</div></div>
     </div>
 
     ${DB.talepler.length===0?'<div class="empty"><div class="empty-icon">🚗</div>Henüz talep yok.</div>':""}
 
     ${DB.talepler.map(function(t) {
-      var renkBorder = t.durum==="Onaylandı"?"#30d158":"#ff9f0a";
-      var badgeClass = t.durum==="Onaylandı"?"badge-green":"badge-orange";
+      var renkBorder = t.durum==="Onaylandı"?"#30d158":t.durum==="Reddedildi"?"#ff453a":"#ff9f0a";
+      var badgeClass = t.durum==="Onaylandı"?"badge-green":t.durum==="Reddedildi"?"badge-red":"badge-orange";
       return '<div class="card" style="border-left:3px solid '+renkBorder+';margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
         '<div>' +
         '<div style="font-weight:700;font-size:14px">'+t.isim+'</div>' +
-        '<div style="font-size:12px;color:#aeaeb2">📍 '+t.nereye+'</div>' +
+        '<div style="font-size:12px;color:#aeaeb2">🏢 '+t.departman+'  •  📍 '+t.nereye+'</div>' +
         '<div style="font-size:11px;color:#636366">📅 '+t.tarih+' • 🕐 '+t.saat+'</div>' +
         (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':"") +
         '</div>' +
@@ -2734,7 +2750,11 @@ function renderTalepler() {
         '</div>' +
         '<div style="display:flex;gap:8px;margin-top:8px">' +
         (t.durum==="Bekliyor"?
-          '<button onclick="talepOnayla('+t.id+')" style="flex:1;padding:7px;background:#30d158;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Onayla</button>':
+          '<button onclick="talepOnayla('+t.id+')" style="flex:1;padding:7px;background:#30d158;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Onayla</button>' +
+          '<button onclick="talepReddet('+t.id+')" style="flex:1;padding:7px;background:#ff453a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">❌ Reddet</button>'
+        : t.durum==="Reddedildi" ?
+          '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
+        :
           '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
         ) +
         '<button onclick="talepSil('+t.id+')" style="padding:7px 12px;background:none;border:1px solid #ff453a;border-radius:8px;color:#ff453a;font-size:12px;cursor:pointer">🗑️</button>' +
@@ -2748,6 +2768,13 @@ async function talepOnayla(id) {
   try { await talepDurumGuncelleDB(id, "Onaylandı"); } catch(e) {}
   DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Onaylandı"}):t; });
   showToast("Talep onaylandı!");
+  renderTalepler();
+}
+
+async function talepReddet(id) {
+  try { await talepDurumGuncelleDB(id, "Reddedildi"); } catch(e) {}
+  DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Reddedildi"}):t; });
+  showToast("Talep reddedildi.");
   renderTalepler();
 }
 
