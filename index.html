@@ -2426,6 +2426,10 @@ function renderMesailer() {
 
   var mesailer = DB.mesailer;
   if(filtreSofor !== "Tümü") mesailer = mesailer.filter(function(m){ return m.sofor===filtreSofor; });
+  var filtreBas = window.MESAI_FILTRE_BAS || "";
+  var filtreBit = window.MESAI_FILTRE_BIT || "";
+  if(filtreBas) mesailer = mesailer.filter(function(m){ return m.tarih>=filtreBas; });
+  if(filtreBit) mesailer = mesailer.filter(function(m){ return m.tarih<=filtreBit; });
 
   // Toplam mesai süresi
   var toplamDk = mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); }, 0);
@@ -2466,10 +2470,31 @@ function renderMesailer() {
 
     <div class="card">
       <div class="section-title">FİLTRELE</div>
-      <select onchange="mesaiFiltreGuncelle(this.value)" style="width:100%">
-        <option value="Tümü" ${filtreSofor==="Tümü"?"selected":""}>Tüm Şoförler</option>
-        ${DB.soforler.map(s=>'<option value="'+s.isim+'" '+(filtreSofor===s.isim?"selected":"")+'>'+s.isim+'</option>').join("")}
-      </select>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="field">
+          <label>Şoför</label>
+          <select onchange="mesaiFiltreGuncelle(this.value)" style="width:100%">
+            <option value="Tümü" ${filtreSofor==="Tümü"?"selected":""}>Tüm Şoförler</option>
+            ${DB.soforler.map(s=>'<option value="'+s.isim+'" '+(filtreSofor===s.isim?"selected":"")+'>'+s.isim+'</option>').join("")}
+          </select>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Başlangıç Tarihi</label>
+            <input type="date" id="mesai-filtre-bas" value="${window.MESAI_FILTRE_BAS||''}" onchange="mesaiTarihFiltre('bas',this.value)"/>
+          </div>
+          <div class="field">
+            <label>Bitiş Tarihi</label>
+            <input type="date" id="mesai-filtre-bit" value="${window.MESAI_FILTRE_BIT||''}" onchange="mesaiTarihFiltre('bit',this.value)"/>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="mesaiHizliFiltre(1)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bugün</button>
+          <button onclick="mesaiHizliFiltre(7)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 7 Gün</button>
+          <button onclick="mesaiHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+          <button onclick="mesaiHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
+        </div>
+      </div>
     </div>
 
     ${mesailer.length>0?`
@@ -2546,6 +2571,17 @@ async function mesaiSil(id) {
 }
 
 function mesaiFiltreGuncelle(v) { window.MESAI_FILTRE_SOFOR=v; renderMesailer(); }
+function mesaiTarihFiltre(tip,v) {
+  if(tip==="bas") window.MESAI_FILTRE_BAS=v;
+  else window.MESAI_FILTRE_BIT=v;
+  renderMesailer();
+}
+function mesaiHizliFiltre(gun) {
+  if(gun===0) { window.MESAI_FILTRE_BAS=""; window.MESAI_FILTRE_BIT=""; }
+  else if(gun===1) { window.MESAI_FILTRE_BAS=bugunTR(); window.MESAI_FILTRE_BIT=bugunTR(); }
+  else { window.MESAI_FILTRE_BIT=bugunTR(); window.MESAI_FILTRE_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0]; }
+  renderMesailer();
+}
 
 window.addEventListener("load", async ()=>{
   logo();
