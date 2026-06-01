@@ -652,7 +652,7 @@ function cikisKaydetBtn(btn) {
   cikisKaydet(soforAdi);
 }
 
-function cikisKaydet(soforAdi) {
+async function cikisKaydet(soforAdi) {
   const soforEl = document.getElementById("f-sofor");
   const sofor = (soforEl ? soforEl.value : "") || soforAdi || "";
   const tarihEl = document.getElementById("f-tarih");
@@ -683,8 +683,7 @@ function cikisKaydet(soforAdi) {
   const km_mesafe = cikisK&&varisK ? mesafe(cikisK.lat,cikisK.lng,varisK.lat,varisK.lng) : null;
   const simdi = new Date();
 
-  DB.aktifSeferler.push({
-    id: Date.now(),
+  const yeniSefer = {
     sofor, tarih, plaka,
     cikis_id: cikisId, cikis_isim: cikisK?.isim||"", cikis_lat: cikisK?.lat, cikis_lng: cikisK?.lng,
     varis_id: varisId, varis_isim: varisK?.isim||"", varis_lat: varisK?.lat, varis_lng: varisK?.lng,
@@ -692,9 +691,13 @@ function cikisKaydet(soforAdi) {
     yuk_turu: yuk, yuk_miktari: miktar, yuk_birimi: birim, aciklama,
     cikis_timestamp: simdi.getTime(),
     cikis_saati: simdi.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})
-  });
-
-  dbKaydet();
+  };
+  try {
+    const data = await seferBaslatDB(yeniSefer);
+    DB.aktifSeferler.push({...yeniSefer, id: data.id});
+  } catch(e) {
+    DB.aktifSeferler.push({...yeniSefer, id: Date.now()});
+  }
   showToast(sofor+" yola çıktı!");
   headerGuncelle();
   if(KUL.rol==="admin") { renderBottomNav(); altMenuSec("sefer"); }
@@ -786,7 +789,7 @@ function kmHesapla(id, basKm) {
   else el.style.display="none";
 }
 
-function donusKaydet(id) {
+async function donusKaydet(id) {
   const sefer = DB.aktifSeferler.find(s=>s.id===id);
   if(!sefer) return;
   const bKm = parseInt(document.getElementById("don-km-"+id).value);
@@ -795,13 +798,16 @@ function donusKaydet(id) {
   if(bKm <= sefer.baslangic_km) { showToast("Bitiş KM başlangıçtan büyük olmalı!","error"); return; }
   const simdi = new Date();
   const bekleme = Math.round((simdi.getTime()-sefer.cikis_timestamp)/60000);
-  DB.tamamlananlar.unshift({
+  const tamamlanan = {
     ...sefer, bitis_km: bKm, km_fark: bKm-sefer.baslangic_km,
     donus_notu: not, bekleme_dakika: bekleme,
     donus_saati: simdi.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})
-  });
+  };
+  try {
+    await seferTamamlaDB(id, bKm, not, bekleme, tamamlanan.donus_saati, bKm-sefer.baslangic_km);
+  } catch(e) {}
+  DB.tamamlananlar.unshift(tamamlanan);
   DB.aktifSeferler = DB.aktifSeferler.filter(s=>s.id!==id);
-  dbKaydet();
   showToast(sefer.sofor+" döndü - "+formatSure(bekleme));
   headerGuncelle();
   if(KUL.rol==="admin") renderBottomNav();
@@ -1188,21 +1194,25 @@ function renderAraclar() {
   `);
 }
 
-function aracEkle() {
+async function aracEkle() {
   const pl = document.getElementById("yeni-plaka").value.trim().toUpperCase();
   if(!pl) { showToast("Plaka girin!","error"); return; }
   if(DB.araclar.find(a=>a.plaka===pl)) { showToast("Bu plaka zaten var!","error"); return; }
-  DB.araclar.push({id:Date.now(),plaka:pl});
-  dbKaydet();
-  showToast(pl+" eklendi!");
-  renderAraclar();
+  try {
+    const data = await aracEkleDB(pl);
+    DB.araclar.push(data);
+    showToast(pl+" eklendi!");
+    renderAraclar();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
-function aracSil(id) {
-  DB.araclar = DB.araclar.filter(a=>a.id!==id);
-  dbKaydet();
-  showToast("Araç silindi.");
-  renderAraclar();
+async function aracSil(id) {
+  try {
+    await aracSilDB(id);
+    DB.araclar = DB.araclar.filter(a=>a.id!==id);
+    showToast("Araç silindi.");
+    renderAraclar();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
 // ═══════════════════════════════════════════
@@ -1243,22 +1253,26 @@ function renderSoforler() {
   `);
 }
 
-function soforEkle() {
+async function soforEkle() {
   const isim = document.getElementById("yeni-sf-isim").value.trim();
   const pin = String(document.getElementById("yeni-sf-pin").value).slice(0,4);
   if(!isim||pin.length!==4) { showToast("Ad ve 4 haneli PIN zorunlu!","error"); return; }
   if(DB.soforler.find(s=>s.isim===isim)) { showToast("Bu isim zaten var!","error"); return; }
-  DB.soforler.push({isim,pin});
-  dbKaydet();
-  showToast(isim+" eklendi!");
-  renderSoforler();
+  try {
+    const data = await soforEkleDB({isim,pin});
+    DB.soforler.push(data);
+    showToast(isim+" eklendi!");
+    renderSoforler();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
-function soforSil(isim) {
-  DB.soforler = DB.soforler.filter(s=>s.isim!==isim);
-  dbKaydet();
-  showToast(isim+" silindi.");
-  renderSoforler();
+async function soforSil(isim) {
+  try {
+    await soforSilDB(isim);
+    DB.soforler = DB.soforler.filter(s=>s.isim!==isim);
+    showToast(isim+" silindi.");
+    renderSoforler();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
 function soforSec(isim) {
@@ -1413,42 +1427,45 @@ function renderKonumlar() {
   }
 }
 
-function konumEkle() {
+async function konumEkle() {
   const isim=document.getElementById("yk-isim").value.trim();
   const adres=document.getElementById("yk-adres").value.trim();
   const lat=parseFloat(document.getElementById("yk-lat").value);
   const lng=parseFloat(document.getElementById("yk-lng").value);
   if(!isim||!lat||!lng){showToast("Zorunlu alanları doldurun!","error");return;}
-  DB.konumlar.push({id:Date.now(),isim,adres,lat,lng});
-  dbKaydet();
-  showToast(isim+" eklendi!");
-  renderKonumlar();
+  try {
+    const data = await konumEkleDB({isim,adres,lat,lng});
+    DB.konumlar.push(data);
+    showToast(isim+" eklendi!");
+    renderKonumlar();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
 function konumDuzenle(id) { DUZ_KONUM_ID=id; renderKonumlar(); }
 
-function konumKaydet() {
+async function konumKaydet() {
   const isim=document.getElementById("duz-isim").value.trim();
   const adres=document.getElementById("duz-adres").value.trim();
   const lat=parseFloat(document.getElementById("duz-lat").value);
   const lng=parseFloat(document.getElementById("duz-lng").value);
   if(!isim||!lat||!lng){showToast("Zorunlu alanları doldurun!","error");return;}
-  if(DUZ_KONUM_ID==="fabrika") {
-    DB.fabrika = {...DB.fabrika,isim,adres,lat,lng};
-  } else {
-    DB.konumlar = DB.konumlar.map(k=>k.id===DUZ_KONUM_ID?{...k,isim,adres,lat,lng}:k);
-  }
-  DUZ_KONUM_ID=null;
-  dbKaydet();
-  showToast(isim+" güncellendi!");
-  renderKonumlar();
+  try {
+    await konumGuncelleDB(DUZ_KONUM_ID,{isim,adres,lat,lng});
+    if(DUZ_KONUM_ID==="fabrika") { DB.fabrika={...DB.fabrika,isim,adres,lat,lng}; }
+    else { DB.konumlar=DB.konumlar.map(k=>k.id===DUZ_KONUM_ID?{...k,isim,adres,lat,lng}:k); }
+    DUZ_KONUM_ID=null;
+    showToast(isim+" güncellendi!");
+    renderKonumlar();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
-function konumSil(id) {
-  DB.konumlar = DB.konumlar.filter(k=>k.id!==id);
-  dbKaydet();
-  showToast("Konum silindi.");
-  renderKonumlar();
+async function konumSil(id) {
+  try {
+    await konumSilDB(id);
+    DB.konumlar=DB.konumlar.filter(k=>k.id!==id);
+    showToast("Konum silindi.");
+    renderKonumlar();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
 // ═══════════════════════════════════════════
@@ -1461,7 +1478,7 @@ function renderYakit() {
       <div class="section-title">Litre Fiyatı Ayarı</div>
       <div class="field">
         <label>Güncel Litre Fiyatı (TL) *</label>
-        <input type="number" id="litre-fiyat" placeholder="42.50" value="${DB.litreFiyati}" oninput="DB.litreFiyati=this.value;dbKaydet();litreFiyatiGuncelle()"/>
+        <input type="number" id="litre-fiyat" placeholder="42.50" value="${DB.litreFiyati}" oninput="DB.litreFiyati=this.value;litreFiyatiGuncelleDB(this.value);litreFiyatiGuncelle()"/>
       </div>
       <div id="litre-fiyat-bilgi" style="margin-top:8px;background:#1c1c1e;border-radius:8px;padding:8px 12px;font-size:12px;color:#aeaeb2;display:${DB.litreFiyati?"block":"none"}">
         ${DB.litreFiyati?`💡 1 litre = <strong style="color:#0a84ff">${parseFloat(DB.litreFiyati).toFixed(2)} TL</strong>`:""}
@@ -1532,7 +1549,7 @@ function yakitHesapla() {
   } else el.style.display="none";
 }
 
-function yakitKaydet() {
+async function yakitKaydet() {
   const sofor=document.getElementById("y-sofor").value;
   const plaka=document.getElementById("y-plaka").value;
   const tarih=document.getElementById("y-tarih").value;
@@ -1542,13 +1559,16 @@ function yakitKaydet() {
   const simdi=new Date();
   // Eğer tarih bugün ise saati yaz, değilse boş bırak
   const bugunStr = bugunTR ? bugunTR() : simdi.toISOString().split("T")[0];
-  DB.yakitlar.unshift({
-    id:Date.now(), sofor, plaka, tarih, litre,
+  const yeniYakit = {
+    sofor, plaka, tarih, litre,
     tutar: fiyat>0?litre*fiyat:0,
     saat: tarih===bugunStr ? simdi.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}) : "",
     kaydeden: KUL.isim
-  });
-  dbKaydet();
+  };
+  try {
+    const data = await yakitEkleDB(yeniYakit);
+    DB.yakitlar.unshift({...yeniYakit, id: data.id});
+  } catch(e) { DB.yakitlar.unshift({...yeniYakit, id: Date.now()}); }
   showToast("Yakıt kaydı eklendi!");
   renderYakit();
 }
@@ -1679,7 +1699,7 @@ function renderBakim() {
   `);
 }
 
-function bakimKaydet() {
+async function bakimKaydet() {
   const plaka=document.getElementById("b-plaka").value;
   const tur=document.getElementById("b-tur").value;
   const tarih=document.getElementById("b-tarih").value;
@@ -1688,15 +1708,18 @@ function bakimKaydet() {
   const maliyet=document.getElementById("b-maliyet").value;
   const not=document.getElementById("b-not").value;
   if(!plaka||!tur||!tarih){showToast("Zorunlu alanları doldurun!","error");return;}
-  DB.bakimlar.unshift({id:Date.now(),plaka,tur,tarih,sonrakiTarih:sonraki,km:km?parseInt(km):0,maliyet:maliyet?parseFloat(maliyet):0,not});
-  dbKaydet();
+  const yeniBakim = {plaka,tur,tarih,sonrakiTarih:sonraki,km:km?parseInt(km):0,maliyet:maliyet?parseFloat(maliyet):0,not};
+  try {
+    const data = await bakimEkleDB(yeniBakim);
+    DB.bakimlar.unshift({...yeniBakim, id: data.id});
+  } catch(e) { DB.bakimlar.unshift({...yeniBakim, id: Date.now()}); }
   showToast("Bakım kaydı eklendi!");
   renderBakim();
 }
 
-function bakimSil(id) {
+async function bakimSil(id) {
+  try { await bakimSilDB(id); } catch(e) {}
   DB.bakimlar=DB.bakimlar.filter(b=>b.id!==id);
-  dbKaydet();
   showToast("Silindi.");
   renderBakim();
 }
@@ -1749,7 +1772,7 @@ function renderAyarlar() {
   `);
 }
 
-function adminPinDegistir() {
+async function adminPinDegistir() {
   const eski = document.getElementById("admin-eski-pin").value;
   const yeni = document.getElementById("admin-yeni-pin").value;
   const yeni2 = document.getElementById("admin-yeni-pin2").value;
@@ -1758,24 +1781,24 @@ function adminPinDegistir() {
   if(yeni.length !== 4) { showToast("PIN 4 haneli olmalı!","error"); return; }
   if(yeni !== yeni2) { showToast("Yeni PIN'ler eşleşmiyor!","error"); return; }
   ADMIN_PIN = yeni;
-  dbKaydet();
+  try { await pinGuncelleDB('admin_pin', yeni); } catch(e) {}
   showToast("Yönetici PIN'i güncellendi!");
   renderAyarlar();
 }
 
-function yakitPinDegistir() {
+async function yakitPinDegistir() {
   const yeni = document.getElementById("yakit-yeni-pin").value;
   const yeni2 = document.getElementById("yakit-yeni-pin2").value;
   if(!yeni||!yeni2) { showToast("Tüm alanları doldurun!","error"); return; }
   if(yeni.length !== 4) { showToast("PIN 4 haneli olmalı!","error"); return; }
   if(yeni !== yeni2) { showToast("PIN'ler eşleşmiyor!","error"); return; }
   YAKIT_PIN = yeni;
-  dbKaydet();
+  try { await pinGuncelleDB('yakit_pin', yeni); } catch(e) {}
   showToast("Yakıt Personeli PIN'i güncellendi!");
   renderAyarlar();
 }
 
-function soforPinDegistir() {
+async function soforPinDegistir() {
   const isim = document.getElementById("pin-sofor-sec").value;
   const yeni = document.getElementById("sofor-yeni-pin").value;
   const yeni2 = document.getElementById("sofor-yeni-pin2").value;
@@ -1784,7 +1807,7 @@ function soforPinDegistir() {
   if(yeni.length !== 4) { showToast("PIN 4 haneli olmalı!","error"); return; }
   if(yeni !== yeni2) { showToast("PIN'ler eşleşmiyor!","error"); return; }
   DB.soforler = DB.soforler.map(s=>s.isim===isim?{...s,pin:yeni}:s);
-  dbKaydet();
+  try { await soforPinGuncelleDB(isim, yeni); } catch(e) {}
   showToast(isim+" PIN'i güncellendi!");
   renderAyarlar();
 }
@@ -1909,6 +1932,152 @@ function excelAktar() {
     showToast("Hata: " + e.message, "error");
   }
 }
+
+
+// ═══════════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════════
+const SUPA_URL = "https://xwqaloxiebliccrjmgyo.supabase.co";
+const SUPA_KEY = "sb_publishable_BLp6PmrBVk2SJOVzwb0eDA_wsR3lpcX";
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+async function dbYukle() {
+  try {
+    const [soforler, araclar, konumlar, fabrikaRes, aktif, tamamlanan, yakitlar, bakimlar, isler, ayarlar] = await Promise.all([
+      supa.from('soforler').select('*').order('isim'),
+      supa.from('araclar').select('*').order('plaka'),
+      supa.from('konumlar').select('*').order('isim'),
+      supa.from('fabrika').select('*').limit(1).single(),
+      supa.from('seferler').select('*').eq('durum','aktif'),
+      supa.from('seferler').select('*').eq('durum','tamamlandi').order('created_at', {ascending:false}),
+      supa.from('yakitlar').select('*').order('tarih', {ascending:false}),
+      supa.from('bakimlar').select('*').order('tarih', {ascending:false}),
+      supa.from('isler').select('*').order('tarih', {ascending:false}),
+      supa.from('ayarlar').select('*'),
+    ]);
+    if(soforler.data) DB.soforler = soforler.data;
+    if(araclar.data) DB.araclar = araclar.data;
+    if(konumlar.data) DB.konumlar = konumlar.data;
+    if(fabrikaRes.data) DB.fabrika = fabrikaRes.data;
+    if(aktif.data) DB.aktifSeferler = aktif.data.map(seferDBdenJS);
+    if(tamamlanan.data) DB.tamamlananlar = tamamlanan.data.map(seferDBdenJS);
+    if(yakitlar.data) DB.yakitlar = yakitlar.data;
+    if(bakimlar.data) DB.bakimlar = bakimlar.data.map(bakimDBdenJS);
+    if(isler.data) DB.isler = isler.data.map(isDBdenJS);
+    if(ayarlar.data) {
+      ayarlar.data.forEach(function(a) {
+        if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
+        if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
+        if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
+      });
+    }
+  } catch(e) {
+    console.error("DB yükleme hatası:", e);
+    showToast("Veritabanı bağlantı hatası!","error");
+  }
+}
+
+function seferDBdenJS(s) {
+  return {
+    id:s.id, sofor:s.sofor, tarih:s.tarih, plaka:s.plaka||"",
+    cikis_id:s.cikis_id, cikis_isim:s.cikis_isim||"",
+    cikis_lat:s.cikis_lat, cikis_lng:s.cikis_lng,
+    varis_id:s.varis_id, varis_isim:s.varis_isim||"",
+    varis_lat:s.varis_lat, varis_lng:s.varis_lng,
+    mesafe:s.mesafe, baslangic_km:s.baslangic_km,
+    bitis_km:s.bitis_km, km_fark:s.km_fark,
+    yuk_turu:s.yuk_turu||"", yuk_miktari:s.yuk_miktari||"",
+    yuk_birimi:s.yuk_birimi||"kg", aciklama:s.aciklama||"",
+    cikis_saati:s.cikis_saati||"", donus_saati:s.donus_saati||"",
+    donus_notu:s.donus_notu||"", bekleme_dakika:s.bekleme_dakika||0,
+    cikis_timestamp:s.cikis_timestamp||Date.now(), durum:s.durum
+  };
+}
+
+function bakimDBdenJS(b) {
+  return {
+    id:b.id, plaka:b.plaka, tur:b.tur, tarih:b.tarih,
+    sonrakiTarih:b.sonraki_tarih||"", km:b.km||0,
+    maliyet:b.maliyet||0, not:b.aciklama||""
+  };
+}
+
+function isDBdenJS(i) {
+  return {
+    id:i.id, kategori:i.kategori, tarih:i.tarih,
+    firma:i.firma, miktar:i.miktar||"", oncelik:i.oncelik||"Normal",
+    not:i.aciklama||"", durum:i.durum||"Bekliyor", olusturma:i.olusturma||""
+  };
+}
+
+async function soforEkleDB(sofor) {
+  const {data,error} = await supa.from('soforler').insert({isim:sofor.isim,pin:sofor.pin}).select().single();
+  if(error) throw error; return data;
+}
+async function soforSilDB(isim) { await supa.from('soforler').delete().eq('isim',isim); }
+async function soforPinGuncelleDB(isim,pin) { await supa.from('soforler').update({pin}).eq('isim',isim); }
+async function aracEkleDB(plaka) {
+  const {data,error} = await supa.from('araclar').insert({plaka}).select().single();
+  if(error) throw error; return data;
+}
+async function aracSilDB(id) { await supa.from('araclar').delete().eq('id',id); }
+async function konumEkleDB(k) {
+  const {data,error} = await supa.from('konumlar').insert({isim:k.isim,adres:k.adres||"",lat:k.lat,lng:k.lng}).select().single();
+  if(error) throw error; return data;
+}
+async function konumSilDB(id) { await supa.from('konumlar').delete().eq('id',id); }
+async function konumGuncelleDB(id,k) {
+  if(id==='fabrika') { await supa.from('fabrika').update({isim:k.isim,adres:k.adres||"",lat:k.lat,lng:k.lng}).eq('id',DB.fabrika.id); }
+  else { await supa.from('konumlar').update({isim:k.isim,adres:k.adres||"",lat:k.lat,lng:k.lng}).eq('id',id); }
+}
+async function seferBaslatDB(sefer) {
+  const {data,error} = await supa.from('seferler').insert({
+    sofor:sefer.sofor, tarih:sefer.tarih, plaka:sefer.plaka||"",
+    cikis_id:String(sefer.cikis_id), cikis_isim:sefer.cikis_isim||"",
+    cikis_lat:sefer.cikis_lat, cikis_lng:sefer.cikis_lng,
+    varis_id:String(sefer.varis_id), varis_isim:sefer.varis_isim||"",
+    varis_lat:sefer.varis_lat, varis_lng:sefer.varis_lng,
+    mesafe:sefer.mesafe, baslangic_km:sefer.baslangic_km,
+    yuk_turu:sefer.yuk_turu||"", yuk_miktari:sefer.yuk_miktari||"",
+    yuk_birimi:sefer.yuk_birimi||"kg", aciklama:sefer.aciklama||"",
+    cikis_saati:sefer.cikis_saati, cikis_timestamp:sefer.cikis_timestamp, durum:'aktif'
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function seferTamamlaDB(id, bKm, donus_notu, bekleme, donus_saati, km_fark) {
+  await supa.from('seferler').update({
+    bitis_km:bKm, km_fark:km_fark, donus_notu:donus_notu||"",
+    bekleme_dakika:bekleme, donus_saati:donus_saati, durum:'tamamlandi'
+  }).eq('id',id);
+}
+async function yakitEkleDB(y) {
+  const {data,error} = await supa.from('yakitlar').insert({
+    sofor:y.sofor, plaka:y.plaka, tarih:y.tarih,
+    saat:y.saat||"", litre:y.litre, tutar:y.tutar||0, kaydeden:y.kaydeden||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function bakimEkleDB(b) {
+  const {data,error} = await supa.from('bakimlar').insert({
+    plaka:b.plaka, tur:b.tur, tarih:b.tarih,
+    sonraki_tarih:b.sonrakiTarih||"", km:b.km||0,
+    maliyet:b.maliyet||0, aciklama:b.not||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function bakimSilDB(id) { await supa.from('bakimlar').delete().eq('id',id); }
+async function isEkleDB(i) {
+  const {data,error} = await supa.from('isler').insert({
+    kategori:i.kategori, tarih:i.tarih, firma:i.firma,
+    miktar:i.miktar||"", oncelik:i.oncelik||"Normal",
+    aciklama:i.not||"", durum:i.durum||"Bekliyor", olusturma:i.olusturma||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function isDurumGuncelleDB(id,durum) { await supa.from('isler').update({durum}).eq('id',id); }
+async function isSilDB(id) { await supa.from('isler').delete().eq('id',id); }
+async function pinGuncelleDB(anahtar,deger) { await supa.from('ayarlar').update({deger}).eq('anahtar',anahtar); }
+async function litreFiyatiGuncelleDB(deger) { await supa.from('ayarlar').update({deger}).eq('anahtar','litre_fiyati'); }
 
 
 function dbKaydet() {
@@ -2041,7 +2210,7 @@ function renderIsListesi() {
   `);
 }
 
-function isEkle() {
+async function isEkle() {
   var kat = document.getElementById("is-kat").value;
   var tarih = document.getElementById("is-tarih").value;
   var firma = document.getElementById("is-firma").value.trim();
@@ -2049,29 +2218,32 @@ function isEkle() {
   var oncelik = "Normal";
   var not = "";
   if(!firma) { showToast("Firma/konum adı zorunlu!","error"); return; }
-  DB.isler.push({
-    id: Date.now(), kategori: kat, tarih: tarih,
-    firma: firma, miktar: miktar, oncelik: oncelik,
-    not: not, durum: "Bekliyor",
-    olusturma: new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})
-  });
-  dbKaydet();
-  showToast(firma + " eklendi!");
+  const yeniIs = {
+    kategori:kat, tarih:tarih, firma:firma, miktar:miktar, oncelik:oncelik,
+    not:not, durum:"Bekliyor",
+    olusturma:new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})
+  };
+  try {
+    const data = await isEkleDB(yeniIs);
+    DB.isler.push({...yeniIs, id: data.id});
+  } catch(e) { DB.isler.push({...yeniIs, id: Date.now()}); }
+  showToast(firma+" eklendi!");
   renderIsListesi();
 }
 
-function isDurumDegistir(id) {
+async function isDurumDegistir(id) {
+  const yeniDurum = DB.isler.find(i=>i.id===id)?.durum==="Tamamlandı"?"Bekliyor":"Tamamlandı";
+  try { await isDurumGuncelleDB(id, yeniDurum); } catch(e) {}
   DB.isler = DB.isler.map(function(i){
-    if(i.id===id) return Object.assign({},i,{durum: i.durum==="Tamamlandı"?"Bekliyor":"Tamamlandı"});
+    if(i.id===id) return Object.assign({},i,{durum:yeniDurum});
     return i;
   });
-  dbKaydet();
   renderIsListesi();
 }
 
-function isSil(id) {
+async function isSil(id) {
+  try { await isSilDB(id); } catch(e) {}
   DB.isler = DB.isler.filter(function(i){ return i.id!==id; });
-  dbKaydet();
   renderIsListesi();
 }
 
@@ -2171,10 +2343,11 @@ async function isExcel() {
   }
 }
 
-window.addEventListener("load", ()=>{
+window.addEventListener("load", async ()=>{
   logo();
   document.querySelectorAll("#login-logo-img,#header-logo-img").forEach(img=>img.src=LOGO_SRC);
-  // localStorage'dan verileri yükle
+  await dbYukle();
+  // localStorage yedek
   try {
     var saved = localStorage.getItem("kucuker_db");
     if(saved) {
