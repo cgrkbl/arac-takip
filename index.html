@@ -136,11 +136,9 @@ textarea{resize:vertical;}
     <rect width="400" height="800" fill="url(#gt1)"/>
   </svg>
   <div style="position:relative;z-index:1;width:100%;max-width:340px">
-  <div style="width:100%;max-width:340px">
     <button onclick="talepEkraniGizle()" style="background:none;border:none;color:#636366;font-size:13px;margin-bottom:20px;padding:0;cursor:pointer">← Geri</button>
-    <div style="font-size:20px;font-weight:800;margin-bottom:4px">🚗 Araç Talebi</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:#f2f2f7">🚗 Araç Talebi</div>
     <div style="font-size:12px;color:#636366;margin-bottom:24px">Talep formunu doldurun</div>
-    
     <div id="talep-form">
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Ad Soyad *</label>
@@ -167,10 +165,9 @@ textarea{resize:vertical;}
       <div id="talep-mesaj" style="font-size:12px;margin-bottom:8px;min-height:18px"></div>
       <button onclick="talепGonder()" style="width:100%;padding:14px;background:#0a84ff;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">🚗 Talebi Gönder</button>
     </div>
-
     <div id="talep-basari" style="display:none;text-align:center;padding:30px 0">
       <div style="font-size:48px;margin-bottom:16px">✅</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:8px">Talebiniz Alındı!</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#f2f2f7">Talebiniz Alındı!</div>
       <div style="font-size:13px;color:#636366;margin-bottom:24px">Yönetici en kısa sürede değerlendirecek.</div>
       <button onclick="talепYeniGonder()" style="padding:12px 24px;background:#3a3a3c;border:1px solid #48484a;border-radius:10px;color:#f2f2f7;font-size:14px;cursor:pointer">Yeni Talep</button>
     </div>
@@ -206,10 +203,10 @@ textarea{resize:vertical;}
     <div id="login-title">Küçüker Lojistik</div>
     <div id="login-sub">Araç Takip Sistemi</div>
     <div id="login-buttons">
-      <button class="login-btn" id="login-sofor-btn" onclick="loginMod('sofor')">🧑‍✈️ Şoför Girişi</button>
+      <button class="login-btn" id="login-sofor-btn" onclick="loginMod('sofor')" style="background:#ff9f0a;color:#000;">🧑‍✈️ Şoför Girişi</button>
       <button class="login-btn" id="login-admin-btn" onclick="loginMod('admin')">🔑 Yönetici Girişi</button>
       <button class="login-btn" id="login-yakit-btn" onclick="loginMod('yakit')">⛽ Yakıt Personeli</button>
-      <button class="login-btn" style="background:#2c2c2e;border:1px solid #48484a;color:#f2f2f7" onclick="talepEkraniGoster()">🚗 Araç Talebi</button>
+      <button class="login-btn" style="background:#ff453a;color:#fff;" onclick="talepEkraniGoster()">🚗 Araç Talebi</button>
     </div>
     <div id="login-form" style="display:none;width:100%">
       <button id="btn-geri" onclick="loginGeri()">← Geri</button>
