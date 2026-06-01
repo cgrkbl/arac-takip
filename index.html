@@ -220,6 +220,7 @@ let DB = {
   yakitlar: [],
   bakimlar: [],
   isler: [],
+  mesailer: [],
   litreFiyati: "",
 };
 
@@ -383,7 +384,7 @@ function logout() {
 const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"},{id:"harita",label:"🗺️ Harita"},{id:"excel",label:"📥 Excel"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"}],
-  yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
+  yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"mesailer",label:"⏰ Mesailer"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
   diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"islistesi",label:"📋 İş Listesi"}],
 };
 
@@ -459,6 +460,7 @@ function tabSec(id) {
     case "yakitliste": renderYakitListe(); break;
     case "bakim":      renderBakim(); break;
     case "ayarlar":    renderAyarlar(); break;
+    case "mesailer":   renderMesailer(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
     case "excel":      renderExcel(); break;
   }
@@ -1994,7 +1996,7 @@ class SupaQuery {
 
 async function dbYukle() {
   try {
-    const [soforler, araclar, konumlar, fabrikaRes, aktif, tamamlanan, yakitlar, bakimlar, isler, ayarlar] = await Promise.all([
+    const [soforler, araclar, konumlar, fabrikaRes, aktif, tamamlanan, yakitlar, bakimlar, isler, ayarlar, mesailer] = await Promise.all([
       supa.from('soforler').select('*').order('isim'),
       supa.from('araclar').select('*').order('plaka'),
       supa.from('konumlar').select('*').order('isim'),
@@ -2005,6 +2007,7 @@ async function dbYukle() {
       supa.from('bakimlar').select('*').order('tarih', {ascending:false}),
       supa.from('isler').select('*').order('tarih', {ascending:false}),
       supa.from('ayarlar').select('*'),
+      supa.from('mesailer').select('*').order('tarih', {ascending:false}),
     ]);
     if(soforler.data) DB.soforler = soforler.data;
     if(araclar.data) DB.araclar = araclar.data;
@@ -2015,6 +2018,7 @@ async function dbYukle() {
     if(yakitlar.data) DB.yakitlar = yakitlar.data;
     if(bakimlar.data) DB.bakimlar = bakimlar.data.map(bakimDBdenJS);
     if(isler.data) DB.isler = isler.data.map(isDBdenJS);
+    if(isler.data) DB.mesailer = (typeof mesailer !== 'undefined' && mesailer.data) ? mesailer.data.map(mesaiDBdenJS) : [];
     if(ayarlar.data) {
       ayarlar.data.forEach(function(a) {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
@@ -2050,6 +2054,14 @@ function bakimDBdenJS(b) {
     id:b.id, plaka:b.plaka, tur:b.tur, tarih:b.tarih,
     sonrakiTarih:b.sonraki_tarih||"", km:b.km||0,
     maliyet:b.maliyet||0, not:b.aciklama||""
+  };
+}
+
+function mesaiDBdenJS(m) {
+  return {
+    id:m.id, sofor:m.sofor, tarih:m.tarih,
+    baslangic:m.baslangic, bitis:m.bitis,
+    sure_dakika:m.sure_dakika||0, aciklama:m.aciklama||""
   };
 }
 
@@ -2127,6 +2139,16 @@ async function isEkleDB(i) {
 }
 async function isDurumGuncelleDB(id,durum) { await supa.from('isler').update({durum}).eq('id',id); }
 async function isSilDB(id) { await supa.from('isler').delete().eq('id',id); }
+
+async function mesaiEkleDB(m) {
+  const {data,error} = await supa.from('mesailer').insert({
+    sofor:m.sofor, tarih:m.tarih, baslangic:m.baslangic,
+    bitis:m.bitis, sure_dakika:m.sure_dakika||0, aciklama:m.aciklama||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function mesaiSilDB(id) { await supa.from('mesailer').delete().eq('id',id); }
+
 async function pinGuncelleDB(anahtar,deger) { await supa.from('ayarlar').update({deger}).eq('anahtar',anahtar); }
 async function litreFiyatiGuncelleDB(deger) { await supa.from('ayarlar').update({deger}).eq('anahtar','litre_fiyati'); }
 
@@ -2393,6 +2415,137 @@ async function isExcel() {
     showToast("Hata: "+e.message,"error");
   }
 }
+
+
+// ═══════════════════════════════════════════
+// MESAİLER
+// ═══════════════════════════════════════════
+function renderMesailer() {
+  var filtreSofor = window.MESAI_FILTRE_SOFOR || "Tümü";
+  window.MESAI_FILTRE_SOFOR = filtreSofor;
+
+  var mesailer = DB.mesailer;
+  if(filtreSofor !== "Tümü") mesailer = mesailer.filter(function(m){ return m.sofor===filtreSofor; });
+
+  // Toplam mesai süresi
+  var toplamDk = mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); }, 0);
+
+  setContent(`
+    <div class="card">
+      <div class="section-title">YENİ MESAİ EKLE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="field">
+          <label>Şoför *</label>
+          <select id="m-sofor">
+            <option value="">Seçin...</option>
+            ${DB.soforler.map(s=>'<option>'+s.isim+'</option>').join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label>Tarih *</label>
+          <input type="date" id="m-tarih" value="${bugunTR()}"/>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Başlangıç *</label>
+            <input type="time" id="m-bas"/>
+          </div>
+          <div class="field">
+            <label>Bitiş *</label>
+            <input type="time" id="m-bit" oninput="mesaiSureHesapla()"/>
+          </div>
+        </div>
+        <div id="mesai-sure" style="display:none;background:#1c1c1e;border-radius:8px;padding:8px 12px;font-size:12px"></div>
+        <div class="field">
+          <label>Açıklama</label>
+          <input type="text" id="m-aciklama" placeholder="Ek bilgi..."/>
+        </div>
+        <button class="btn btn-blue" onclick="mesaiEkle()">+ Mesai Ekle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">FİLTRELE</div>
+      <select onchange="mesaiFiltreGuncelle(this.value)" style="width:100%">
+        <option value="Tümü" ${filtreSofor==="Tümü"?"selected":""}>Tüm Şoförler</option>
+        ${DB.soforler.map(s=>'<option value="'+s.isim+'" '+(filtreSofor===s.isim?"selected":"")+'>'+s.isim+'</option>').join("")}
+      </select>
+    </div>
+
+    ${mesailer.length>0?`
+    <div class="kpi-card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:24px">⏰</span>
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#0a84ff">${formatSure(toplamDk)}</div>
+        <div style="font-size:11px;color:#636366">${mesailer.length} kayıt • Toplam Mesai</div>
+      </div>
+    </div>`:""}
+
+    ${mesailer.length===0?'<div class="empty"><div class="empty-icon">⏰</div>Mesai kaydı yok.</div>':""}
+
+    ${mesailer.map(function(m) {
+      return '<div class="card" style="border-left:3px solid #0a84ff;margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div>' +
+        '<div style="font-weight:700;font-size:14px">'+m.sofor+'</div>' +
+        '<div style="font-size:11px;color:#636366">'+m.tarih+' • '+m.baslangic+' - '+m.bitis+'</div>' +
+        (m.aciklama?'<div style="font-size:11px;color:#636366">💬 '+m.aciklama+'</div>':"") +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span class="badge badge-blue">⏱️ '+formatSure(m.sure_dakika)+'</span>' +
+        '<button onclick="mesaiSil('+m.id+')" style="background:none;color:#ff453a;font-size:16px;padding:0;border:none;cursor:pointer">🗑️</button>' +
+        '</div></div></div>';
+    }).join("")}
+    <div style="height:20px"></div>
+  `);
+}
+
+function mesaiSureHesapla() {
+  var bas = document.getElementById("m-bas")?.value;
+  var bit = document.getElementById("m-bit")?.value;
+  var el = document.getElementById("mesai-sure");
+  if(!el) return;
+  if(bas && bit) {
+    var basDk = parseInt(bas.split(":")[0])*60 + parseInt(bas.split(":")[1]);
+    var bitDk = parseInt(bit.split(":")[0])*60 + parseInt(bit.split(":")[1]);
+    var fark = bitDk - basDk;
+    if(fark < 0) fark += 1440;
+    el.style.display = "block";
+    el.innerHTML = '⏱️ Mesai süresi: <strong style="color:#0a84ff">' + formatSure(fark) + '</strong>';
+    el.dataset.sure = fark;
+  } else {
+    el.style.display = "none";
+  }
+}
+
+async function mesaiEkle() {
+  var sofor = document.getElementById("m-sofor").value;
+  var tarih = document.getElementById("m-tarih").value;
+  var bas = document.getElementById("m-bas").value;
+  var bit = document.getElementById("m-bit").value;
+  var aciklama = document.getElementById("m-aciklama").value;
+  if(!sofor||!tarih||!bas||!bit) { showToast("Zorunlu alanları doldurun!","error"); return; }
+  var basDk = parseInt(bas.split(":")[0])*60 + parseInt(bas.split(":")[1]);
+  var bitDk = parseInt(bit.split(":")[0])*60 + parseInt(bit.split(":")[1]);
+  var sure = bitDk - basDk;
+  if(sure < 0) sure += 1440;
+  var yeniMesai = {sofor, tarih, baslangic:bas, bitis:bit, sure_dakika:sure, aciklama};
+  try {
+    const data = await mesaiEkleDB(yeniMesai);
+    DB.mesailer.unshift({...yeniMesai, id:data.id});
+    showToast(sofor+" mesai eklendi!");
+    renderMesailer();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
+}
+
+async function mesaiSil(id) {
+  try { await mesaiSilDB(id); } catch(e) {}
+  DB.mesailer = DB.mesailer.filter(function(m){ return m.id!==id; });
+  showToast("Mesai silindi.");
+  renderMesailer();
+}
+
+function mesaiFiltreGuncelle(v) { window.MESAI_FILTRE_SOFOR=v; renderMesailer(); }
 
 window.addEventListener("load", async ()=>{
   logo();
