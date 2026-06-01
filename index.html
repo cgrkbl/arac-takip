@@ -295,6 +295,7 @@ let DB = {
   isler: [],
   mesailer: [],
   talepler: [],
+  nakliyeler: [],
   litreFiyati: "",
 };
 
@@ -467,7 +468,7 @@ const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"},{id:"harita",label:"🗺️ Harita"},{id:"excel",label:"📥 Excel"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"}],
   yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"mesailer",label:"⏰ Mesailer"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
-  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"}],
+  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"}],
 };
 
 function altMenuSec(menu) {
@@ -546,6 +547,7 @@ function tabSec(id) {
     case "ayarlar":    renderAyarlar(); break;
     case "mesailer":   renderMesailer(); break;
     case "talepler":   renderTalepler(); break;
+    case "nakliye":    renderNakliye(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
     case "excel":      renderExcel(); break;
   }
@@ -989,6 +991,12 @@ function renderKPI() {
         <canvas id="pie-bek" width="140" height="140"></canvas>
         <div id="pie-bek-legend" style="flex:1;font-size:11px"></div>
       </div>
+    </div>`:""}
+    ${DB.nakliyeler.length>0?`
+    <div style="font-size:12px;font-weight:700;color:#0a84ff;text-transform:uppercase;letter-spacing:1px;margin:4px 0 10px">🚚 Nakliye Özeti</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="kpi-card"><div class="kpi-icon">🚚</div><div class="kpi-val" style="color:#0a84ff">${DB.nakliyeler.length}</div><div class="kpi-unit">adet</div><div class="kpi-label">Toplam Nakliye</div></div>
+      <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a">${DB.nakliyeler.reduce(function(a,n){return a+n.fiyat;},0).toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam Maliyet</div></div>
     </div>`:""}
     ${DB.yakitlar.length>0?`
     <div style="font-size:12px;font-weight:700;color:#30d158;text-transform:uppercase;letter-spacing:1px;margin:4px 0 10px">⛽ Yakıt Özeti</div>
@@ -2091,7 +2099,7 @@ class SupaQuery {
 
 async function dbYukle() {
   try {
-    const [soforler, araclar, konumlar, fabrikaRes, aktif, tamamlanan, yakitlar, bakimlar, isler, ayarlar, mesailer, talepler] = await Promise.all([
+    const [soforler, araclar, konumlar, fabrikaRes, aktif, tamamlanan, yakitlar, bakimlar, isler, ayarlar, mesailer, talepler, nakliyeler] = await Promise.all([
       supa.from('soforler').select('*').order('isim'),
       supa.from('araclar').select('*').order('plaka'),
       supa.from('konumlar').select('*').order('isim'),
@@ -2104,6 +2112,7 @@ async function dbYukle() {
       supa.from('ayarlar').select('*'),
       supa.from('mesailer').select('*').order('tarih', {ascending:false}),
       supa.from('talepler').select('*').order('created_at', {ascending:false}),
+      supa.from('nakliyeler').select('*').order('tarih', {ascending:false}),
     ]);
     if(soforler.data) DB.soforler = soforler.data;
     if(araclar.data) DB.araclar = araclar.data;
@@ -2116,6 +2125,7 @@ async function dbYukle() {
     if(isler.data) DB.isler = isler.data.map(isDBdenJS);
     if(isler.data) DB.mesailer = (typeof mesailer !== 'undefined' && mesailer.data) ? mesailer.data.map(mesaiDBdenJS) : [];
     if(talepler && talepler.data) DB.talepler = talepler.data;
+    if(nakliyeler && nakliyeler.data) DB.nakliyeler = nakliyeler.data;
     if(ayarlar.data) {
       ayarlar.data.forEach(function(a) {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
@@ -2217,6 +2227,14 @@ async function yakitEkleDB(y) {
   }).select().single();
   if(error) throw error; return data;
 }
+async function nakliyelEkleDB(n) {
+  const {data,error} = await supa.from('nakliyeler').insert({
+    tarih:n.tarih, sevk_adresi:n.sevk_adresi, fiyat:n.fiyat, aciklama:n.aciklama||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function nakliyeSilDB(id) { await supa.from('nakliyeler').delete().eq('id',id); }
+
 async function yakitSilDB(id) { await supa.from('yakitlar').delete().eq('id',id); }
 
 async function bakimEkleDB(b) {
@@ -2697,6 +2715,121 @@ function mesaiHizliFiltre(gun) {
   renderMesailer();
 }
 
+
+
+// ═══════════════════════════════════════════
+// NAKLİYE
+// ═══════════════════════════════════════════
+function renderNakliye() {
+  var filtreBas = window.NAKLIYE_BAS || "";
+  var filtreBit = window.NAKLIYE_BIT || "";
+  var nakliyeler = DB.nakliyeler;
+  if(filtreBas) nakliyeler = nakliyeler.filter(function(n){ return n.tarih>=filtreBas; });
+  if(filtreBit) nakliyeler = nakliyeler.filter(function(n){ return n.tarih<=filtreBit; });
+
+  var toplamTutar = nakliyeler.reduce(function(a,n){ return a+n.fiyat; }, 0);
+
+  setContent(`
+    <div class="card">
+      <div class="section-title">YENİ NAKLİYE EKLE</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="field">
+          <label>Tarih *</label>
+          <input type="date" id="n-tarih" value="${bugunTR()}"/>
+        </div>
+        <div class="field">
+          <label>Sevk Adresi *</label>
+          <input type="text" id="n-adres" placeholder="İstanbul, Merkez Depo"/>
+        </div>
+        <div class="field">
+          <label>Fiyat (TL) *</label>
+          <input type="number" id="n-fiyat" placeholder="1500"/>
+        </div>
+        <div class="field">
+          <label>Açıklama</label>
+          <input type="text" id="n-aciklama" placeholder="Ek bilgi..."/>
+        </div>
+        <button class="btn btn-blue" onclick="nakliyeEkle()">+ Nakliye Ekle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">FİLTRELE</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="field">
+          <label>Başlangıç</label>
+          <input type="date" value="${filtreBas}" onchange="nakliyeTarihFiltre('bas',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Bitiş</label>
+          <input type="date" value="${filtreBit}" onchange="nakliyeTarihFiltre('bit',this.value)"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="nakliyeHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="nakliyeHizliFiltre(90)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 90 Gün</button>
+        <button onclick="nakliyeHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
+      </div>
+    </div>
+
+    ${nakliyeler.length>0?`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="kpi-card"><div class="kpi-icon">🚚</div><div class="kpi-val" style="color:#0a84ff">${nakliyeler.length}</div><div class="kpi-unit">adet</div><div class="kpi-label">Toplam Nakliye</div></div>
+      <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a">${toplamTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam Maliyet</div></div>
+    </div>`:""}
+
+    ${nakliyeler.length===0?'<div class="empty"><div class="empty-icon">🚚</div>Nakliye kaydı yok.</div>':""}
+
+    ${nakliyeler.map(function(n) {
+      return '<div class="card" style="border-left:3px solid #0a84ff;margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="flex:1">' +
+        '<div style="font-weight:700;font-size:14px">📍 '+n.sevk_adresi+'</div>' +
+        '<div style="font-size:11px;color:#636366">📅 '+n.tarih+'</div>' +
+        (n.aciklama?'<div style="font-size:11px;color:#636366">💬 '+n.aciklama+'</div>':"") +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+        '<span class="badge badge-orange">'+n.fiyat.toLocaleString("tr-TR")+' TL</span>' +
+        '<button onclick="nakliyeSil('+n.id+')" style="background:none;border:1px solid #ff453a;border-radius:6px;color:#ff453a;font-size:11px;cursor:pointer;padding:3px 8px">🗑️ Sil</button>' +
+        '</div></div></div>';
+    }).join("")}
+    <div style="height:20px"></div>
+  `);
+}
+
+function nakliyeTarihFiltre(tip, v) {
+  if(tip==="bas") window.NAKLIYE_BAS=v;
+  else window.NAKLIYE_BIT=v;
+  renderNakliye();
+}
+
+function nakliyeHizliFiltre(gun) {
+  if(gun===0) { window.NAKLIYE_BAS=""; window.NAKLIYE_BIT=""; }
+  else { window.NAKLIYE_BIT=bugunTR(); window.NAKLIYE_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0]; }
+  renderNakliye();
+}
+
+async function nakliyeEkle() {
+  var tarih = document.getElementById("n-tarih").value;
+  var adres = document.getElementById("n-adres").value.trim();
+  var fiyat = parseFloat(document.getElementById("n-fiyat").value);
+  var aciklama = document.getElementById("n-aciklama").value.trim();
+  if(!tarih||!adres||!fiyat) { showToast("Zorunlu alanları doldurun!","error"); return; }
+  var yeni = {tarih, sevk_adresi:adres, fiyat, aciklama};
+  try {
+    const data = await nakliyelEkleDB(yeni);
+    DB.nakliyeler.unshift({...yeni, id:data.id});
+    showToast("Nakliye kaydı eklendi!");
+    renderNakliye();
+  } catch(e) { showToast("Hata: "+e.message,"error"); }
+}
+
+async function nakliyeSil(id) {
+  try { await nakliyeSilDB(id); } catch(e) {}
+  DB.nakliyeler = DB.nakliyeler.filter(function(n){ return n.id!==id; });
+  showToast("Nakliye silindi.");
+  renderNakliye();
+}
 
 // ═══════════════════════════════════════════
 // ARAÇ TALEPLERİ
