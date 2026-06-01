@@ -138,7 +138,10 @@ textarea{resize:vertical;}
   <div style="position:relative;z-index:1;width:100%;max-width:340px">
     <button onclick="talepEkraniGizle()" style="background:none;border:none;color:#636366;font-size:13px;margin-bottom:20px;padding:0;cursor:pointer">← Geri</button>
     <div style="font-size:20px;font-weight:800;margin-bottom:4px;color:#f2f2f7">🚗 Araç Talebi</div>
-    <div style="font-size:12px;color:#636366;margin-bottom:24px">Talep formunu doldurun</div>
+    <div style="display:flex;background:#2c2c2e;border-radius:10px;padding:4px;gap:4px;margin:12px 0">
+      <button onclick="talepTab('form')" id="tab-talep-form" style="flex:1;padding:8px;border:none;border-radius:8px;background:#0a84ff;color:#fff;font-size:12px;font-weight:600;cursor:pointer">📝 Yeni Talep</button>
+      <button onclick="talepTab('sorgula')" id="tab-talep-sorgula" style="flex:1;padding:8px;border:none;border-radius:8px;background:transparent;color:#636366;font-size:12px;font-weight:600;cursor:pointer">🔍 Sorgula</button>
+    </div>
     <div id="talep-form">
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Ad Soyad *</label>
@@ -175,8 +178,17 @@ textarea{resize:vertical;}
       <div style="font-size:13px;color:#636366;margin-bottom:24px">Yönetici en kısa sürede değerlendirecek.</div>
       <button onclick="talепYeniGonder()" style="padding:12px 24px;background:#3a3a3c;border:1px solid #48484a;border-radius:10px;color:#f2f2f7;font-size:14px;cursor:pointer">Yeni Talep</button>
     </div>
+    <div id="talep-sorgula-panel" style="display:none">
+      <div class="field" style="margin-bottom:12px">
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Ad Soyad *</label>
+        <input type="text" id="s-isim" placeholder="Ahmet Yılmaz"/>
+      </div>
+      <button onclick="talepSorgula()" style="width:100%;padding:14px;background:#636366;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px">🔍 Sorgula</button>
+      <div id="sorgula-sonuc"></div>
+    </div>
   </div>
 </div>
+
 
 <!-- LOGIN -->
 <div id="login-screen">
@@ -2670,6 +2682,75 @@ function mesaiHizliFiltre(gun) {
 // ═══════════════════════════════════════════
 // ARAÇ TALEPLERİ
 // ═══════════════════════════════════════════
+
+function talepTab(tab) {
+  var formEl = document.getElementById("talep-form");
+  var sorgulaEl = document.getElementById("talep-sorgula-panel");
+  var basariEl = document.getElementById("talep-basari");
+  var btnForm = document.getElementById("tab-talep-form");
+  var btnSorgula = document.getElementById("tab-talep-sorgula");
+  if(tab==="form") {
+    formEl.style.display = "block";
+    sorgulaEl.style.display = "none";
+    if(basariEl) basariEl.style.display = "none";
+    btnForm.style.background = "#0a84ff"; btnForm.style.color = "#fff";
+    btnSorgula.style.background = "transparent"; btnSorgula.style.color = "#636366";
+  } else {
+    formEl.style.display = "none";
+    sorgulaEl.style.display = "block";
+    if(basariEl) basariEl.style.display = "none";
+    btnForm.style.background = "transparent"; btnForm.style.color = "#636366";
+    btnSorgula.style.background = "#636366"; btnSorgula.style.color = "#fff";
+    document.getElementById("sorgula-sonuc").innerHTML = "";
+  }
+}
+
+function talepSorgulaGoster() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("sorgula-screen").style.display = "flex";
+  document.getElementById("sorgula-sonuc").innerHTML = "";
+  document.getElementById("s-isim").value = "";
+}
+
+function talepSorgulaGizle() {
+  document.getElementById("sorgula-screen").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+}
+
+async function talepSorgula() {
+  var isim = document.getElementById("s-isim").value.trim();
+  if(!isim) { 
+    document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#ff453a;font-size:12px">Ad soyad girin!</div>';
+    return; 
+  }
+  document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#636366;font-size:12px;text-align:center">Yükleniyor...</div>';
+  try {
+    const {data, error} = await supa.from("talepler").select("*").eq("isim", isim).order("created_at", {ascending:false});
+    if(error) throw error;
+    if(!data || data.length===0) {
+      document.getElementById("sorgula-sonuc").innerHTML = '<div style="text-align:center;color:#636366;padding:20px">Bu isme ait talep bulunamadı.</div>';
+      return;
+    }
+    var html = '<div style="font-size:12px;color:#636366;margin-bottom:10px">'+data.length+' talep bulundu</div>';
+    data.forEach(function(t) {
+      var renk = t.durum==="Onaylandı"?"#30d158":t.durum==="Reddedildi"?"#ff453a":"#ff9f0a";
+      var icon = t.durum==="Onaylandı"?"✅":t.durum==="Reddedildi"?"❌":"⏳";
+      html += '<div style="background:#2c2c2e;border:1px solid #48484a;border-left:3px solid '+renk+';border-radius:10px;padding:12px;margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+        '<div style="font-size:12px;color:#636366">'+t.tarih+' • '+t.saat+'</div>' +
+        '<span style="background:'+renk+'22;color:'+renk+';border:1px solid '+renk+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">'+icon+' '+t.durum+'</span>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:700;color:#f2f2f7;margin-bottom:3px">📍 '+t.nereye+'</div>' +
+        (t.departman?'<div style="font-size:11px;color:#636366">🏢 '+t.departman+'</div>':'') +
+        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':'') +
+        '</div>';
+    });
+    document.getElementById("sorgula-sonuc").innerHTML = html;
+  } catch(e) {
+    document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#ff453a;font-size:12px">Hata: '+e.message+'</div>';
+  }
+}
+
 function talepEkraniGoster() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("talep-screen").style.display = "flex";
