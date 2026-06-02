@@ -1226,7 +1226,7 @@ async function kpiDashGuncelle(alan, deger) {
   var anahtar = alan==="depoDoluluk" ? "kpi_depo_doluluk" : alan==="isKazasi" ? "kpi_is_kazasi" : null;
   if(anahtar) {
     try { await ayarKaydetDB(anahtar, deger); }
-    catch(e) { showToast("Kaydedilemedi, bağlantı hatası","error"); }
+    catch(e) { console.error("KPI kaydetme hatası:", e); showToast("Kaydedilemedi: "+(e.message||"bağlantı hatası"),"error"); }
   }
 }
 
@@ -2680,7 +2680,10 @@ async function talepSilDB(id) {
 }
 
 async function pinGuncelleDB(anahtar,deger) { await supa.from('ayarlar').update({deger}).eq('anahtar',anahtar); }
-async function ayarKaydetDB(anahtar,deger) { await supa.from('ayarlar').upsert({anahtar:anahtar,deger:String(deger)},{onConflict:'anahtar'}); }
+async function ayarKaydetDB(anahtar,deger) {
+  var r = await supa.from('ayarlar').update({deger:String(deger)}).eq('anahtar',anahtar);
+  if(r.error) throw r.error;
+}
 async function litreFiyatiGuncelleDB(deger) { await supa.from('ayarlar').update({deger}).eq('anahtar','litre_fiyati'); }
 
 
