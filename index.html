@@ -1041,6 +1041,8 @@ function renderKPI() {
   var nakliyeMaliyet = nakData.reduce((a,n)=>a+(n.fiyat||0),0);
   var sevkiyatSeferSayisi = tSefer;
   var sevkiyatYukMiktari = tYuk;
+  // KM Birim Maliyet: dönemdeki yakıt tutarı / toplam km (TL/km)
+  var kmBirimMaliyet = tKm>0 ? (tTutar/tKm) : null;
   // Plan Gerçekleşen Uyum: seçili dönemdeki işlerden otomatik (tamamlanan / kararlı işler)
   var isData = DB.isler || [];
   if(bas) isData = isData.filter(i=>i.tarih>=bas&&i.tarih<=bit);
@@ -1058,7 +1060,7 @@ function renderKPI() {
     nakliyeMaliyet: nakliyeMaliyet,
     sevkiyatSefer: sevkiyatSeferSayisi,
     sevkiyatYuk: sevkiyatYukMiktari,
-    depoDoluluk: dash.depoDoluluk,
+    kmBirimMaliyet: kmBirimMaliyet,
     planaUyum: planUyum,
     planUyumDetay: {tamam:isTamam, olmadi:isOlmadi},
     isKazasi: dash.isKazasi
@@ -1076,11 +1078,9 @@ function renderKPI() {
           <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
         </div>
         <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">DEPO<br>DOLULUK</div>
-          <div style="display:inline-flex;align-items:center;justify-content:center;gap:1px">
-            <input type="number" inputmode="numeric" class="kpi-input" min="0" max="100" value="${dash.depoDoluluk}" placeholder="—" oninput="if(this.value>100)this.value=100;kpiInputBoyut(this);" onchange="kpiDashGuncelle('depoDoluluk',this.value)" style="width:${(String(dash.depoDoluluk).length||1)+1}ch;min-width:1ch;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
-            <span style="font-size:18px;font-weight:800;color:#8fa3c4">%</span>
-          </div>
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">KM BİRİM<br>MALİYET</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;margin-top:4px">${kmBirimMaliyet!==null?kmBirimMaliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</div>
+          <div style="font-size:10px;color:#8fa3c4">TL/km</div>
         </div>
         <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
@@ -1337,7 +1337,7 @@ async function kpiRaporExcel() {
   // KPI kartları - başlık satırı (satır 4) ve değer satırı (satır 5)
   var kartlar = [
     {baslik:"FAZLA MESAİ SAAT", deger:String(v.mesaiSaat), birim:""},
-    {baslik:"DEPO DOLULUK", deger:v.depoDoluluk!==""?v.depoDoluluk+"%":"—", birim:""},
+    {baslik:"KM BİRİM MALİYET", deger:(v.kmBirimMaliyet!==null&&v.kmBirimMaliyet!==undefined)?v.kmBirimMaliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL/km":"—", birim:""},
     {baslik:"NAKLİYE MALİYETLERİ", deger:v.nakliyeMaliyet.toLocaleString("tr-TR")+" TL", birim:""},
     {baslik:"ARAÇ PLAN GERÇEKLEŞEN UYUM", deger:v.planaUyum!==""?v.planaUyum+"%":"—", birim:""},
     {baslik:"SEVKİYAT MİKTARI", deger:v.sevkiyatSefer+" sefer", birim:v.sevkiyatYuk.toLocaleString("tr-TR")+" yük"},
@@ -3206,12 +3206,6 @@ function renderMaliyetRaporu() {
   var rapor = hesapla(filtreBas, filtreBit);
 
   setContent(`
-    <div style="display:flex;background:#2c2c2e;border-radius:10px;padding:4px;gap:4px;margin-bottom:12px">
-      <button onclick="maliyetMod('tarih')" style="flex:1;padding:8px;border:none;border-radius:8px;background:${filtreMod==='tarih'?'#0a84ff':'transparent'};color:${filtreMod==='tarih'?'#fff':'#636366'};font-size:12px;font-weight:600;cursor:pointer">📅 Tarih Aralığı</button>
-      <button onclick="maliyetMod('ay')" style="flex:1;padding:8px;border:none;border-radius:8px;background:${filtreMod==='ay'?'#0a84ff':'transparent'};color:${filtreMod==='ay'?'#fff':'#636366'};font-size:12px;font-weight:600;cursor:pointer">📆 Aylık</button>
-    </div>
-
-    ${filtreMod==='tarih'?`
     <div class="card">
       <div class="section-title">TARİH ARALIĞI</div>
       <div class="row" style="margin-bottom:8px">
@@ -3224,24 +3218,7 @@ function renderMaliyetRaporu() {
         <button onclick="maliyetHizli('ay')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bu Ay</button>
         <button onclick="maliyetHizli('yil')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bu Yıl</button>
       </div>
-    </div>`:`
-    <div class="card">
-      <div class="section-title">AY SEÇ</div>
-      <div class="row">
-        <div class="field">
-          <label>Yıl</label>
-          <select onchange="maliyetAySec(this.value, document.getElementById('ay-sec').value)" id="yil-sec">
-            ${yillar.map(y=>'<option value="'+y+'" '+(filtreBas.startsWith(y)?'selected':'')+'>'+y+'</option>').join('')}
-          </select>
-        </div>
-        <div class="field">
-          <label>Ay</label>
-          <select onchange="maliyetAySec(document.getElementById('yil-sec').value, this.value)" id="ay-sec">
-            ${aylar.map((a,i)=>'<option value="'+(i+1)+'" '+(parseInt(filtreBas.substring(5,7))===(i+1)?'selected':'')+'>'+a+'</option>').join('')}
-          </select>
-        </div>
-      </div>
-    </div>`}
+    </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
       <div class="kpi-card"><div class="kpi-icon">⛽</div><div class="kpi-val" style="color:#30d158;font-size:16px">${rapor.yakitTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Yakıt</div></div>
