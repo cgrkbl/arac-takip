@@ -54,17 +54,15 @@ textarea{resize:vertical;}
 .tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#636366;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;}
 .tab-btn.active{color:#0a84ff;border-bottom-color:#0a84ff;}
 .tab-badge{position:absolute;top:5px;right:4px;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
-#akordeon{background:#1c1c1e;padding:10px;border-bottom:1px solid #48484a;}
-.akr-mod{background:#2c2c2e;border-radius:10px;overflow:hidden;margin-bottom:8px;}
-.akr-bas{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;cursor:pointer;user-select:none;}
-.akr-bas.acik{background:#0a84ff;}
-.akr-bas .akr-baslik{color:#f2f2f7;font-weight:600;font-size:15px;}
-.akr-bas.acik .akr-baslik{color:#fff;}
-.akr-bas .akr-ok{color:#8fa3c4;font-size:14px;transition:transform 0.2s;}
-.akr-bas.acik .akr-ok{color:#fff;transform:rotate(90deg);}
-.akr-alt{padding:5px;}
-.akr-alt-btn{display:flex;align-items:center;gap:10px;padding:12px 15px;color:#aeaeb2;font-size:14px;border-radius:8px;cursor:pointer;}
-.akr-alt-btn.aktif{background:#3a3a3c;color:#0a84ff;font-weight:600;}
+#akordeon{background:#1c1c1e;border-bottom:1px solid #48484a;}
+.akr-bar{display:flex;background:#2c2c2e;}
+.akr-bas{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;user-select:none;border-bottom:2px solid transparent;color:#aeaeb2;}
+.akr-bas .akr-ikon{font-size:17px;line-height:1;}
+.akr-bas .akr-baslik{font-weight:600;font-size:10px;white-space:nowrap;}
+.akr-bas.acik{color:#0a84ff;border-bottom-color:#0a84ff;background:#1c1c1e;}
+.akr-panel{display:flex;gap:8px;padding:10px;flex-wrap:wrap;}
+.akr-alt-btn{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#2c2c2e;color:#aeaeb2;font-size:14px;border-radius:8px;cursor:pointer;flex:1;min-width:130px;justify-content:center;}
+.akr-alt-btn.aktif{background:#0a84ff;color:#fff;font-weight:600;}
 
 /* Alt nav - admin */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#2c2c2e;border-top:1px solid #48484a;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
@@ -522,8 +520,8 @@ function altMenuSec(menu) {
     // İlk modülü aç ve ilk alt sekmesini seç
     window.AKR_ACIK = window.AKR_ACIK || DIGER_MODULLER[0].id;
     var acikMod = DIGER_MODULLER.find(function(m){return m.id===window.AKR_ACIK;}) || DIGER_MODULLER[0];
-    renderAkordeon();
     tabSec(acikMod.alt[0].id);
+    renderAkordeon();
   } else {
     document.getElementById("akordeon").style.display = "none";
     document.getElementById("tab-bar").style.display = "flex";
@@ -534,37 +532,30 @@ function altMenuSec(menu) {
 }
 
 function renderAkordeon() {
-  var html = DIGER_MODULLER.map(function(mod){
+  var basHtml = DIGER_MODULLER.map(function(mod){
     var acik = window.AKR_ACIK===mod.id;
-    var altHtml = "";
-    if(acik) {
-      altHtml = '<div class="akr-alt">' + mod.alt.map(function(a){
-        var aktif = AKTIF_TAB===a.id;
-        return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')">'+
-          '<span>'+a.ikon+'</span><span>'+a.label+'</span></div>';
-      }).join("") + '</div>';
-    }
-    return '<div class="akr-mod">'+
-      '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')">'+
-        '<span class="akr-baslik">'+mod.ikon+' '+mod.baslik+'</span>'+
-        '<span class="akr-ok">'+(acik?"▾":"▸")+'</span>'+
-      '</div>'+altHtml+
+    return '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')">'+
+      '<span class="akr-ikon">'+mod.ikon+'</span>'+
+      '<span class="akr-baslik">'+mod.baslik+'</span>'+
     '</div>';
   }).join("");
-  document.getElementById("akordeon").innerHTML = html;
+
+  var acikMod = DIGER_MODULLER.find(function(m){return m.id===window.AKR_ACIK;}) || DIGER_MODULLER[0];
+  var panelHtml = '<div class="akr-panel">' + acikMod.alt.map(function(a){
+    var aktif = AKTIF_TAB===a.id;
+    return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')">'+
+      '<span>'+a.ikon+'</span><span>'+a.label+'</span></div>';
+  }).join("") + '</div>';
+
+  document.getElementById("akordeon").innerHTML = '<div class="akr-bar">'+basHtml+'</div>'+panelHtml;
 }
 
 function akrToggle(modId) {
-  if(window.AKR_ACIK===modId) {
-    // Zaten açıksa kapatma; tek bir modül hep açık kalsın (içerik göstermek için)
-    renderAkordeon();
-    return;
-  }
   window.AKR_ACIK = modId;
   var mod = DIGER_MODULLER.find(function(m){return m.id===modId;});
-  renderAkordeon();
-  // Açılan modülün ilk alt sekmesini göster
+  // Önce sekmeyi seç (AKTIF_TAB güncellensin), sonra akordeonu çiz ki aktif buton işaretlensin
   if(mod) tabSec(mod.alt[0].id);
+  renderAkordeon();
 }
 
 function akrSec(tabId) {
@@ -1043,6 +1034,13 @@ function renderKPI() {
   var nakliyeMaliyet = nakData.reduce((a,n)=>a+(n.fiyat||0),0);
   var sevkiyatSeferSayisi = tSefer;
   var sevkiyatYukMiktari = tYuk;
+  // Plan Gerçekleşen Uyum: seçili dönemdeki işlerden otomatik (tamamlanan / kararlı işler)
+  var isData = DB.isler || [];
+  if(bas) isData = isData.filter(i=>i.tarih>=bas&&i.tarih<=bit);
+  var isTamam = isData.filter(i=>i.durum==="Tamamlandı").length;
+  var isOlmadi = isData.filter(i=>i.durum==="Tamamlanamadı").length;
+  var isKararli = isTamam + isOlmadi;
+  var planUyum = isKararli>0 ? Math.round(isTamam/isKararli*100) : "";
   // Elle girilen KPI'lar (oturum boyunca saklanır)
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
   var dash = window.KPI_DASH;
@@ -1054,7 +1052,8 @@ function renderKPI() {
     sevkiyatSefer: sevkiyatSeferSayisi,
     sevkiyatYuk: sevkiyatYukMiktari,
     depoDoluluk: dash.depoDoluluk,
-    planaUyum: dash.planaUyum,
+    planaUyum: planUyum,
+    planUyumDetay: {tamam:isTamam, olmadi:isOlmadi},
     isKazasi: dash.isKazasi
   };
 
@@ -1082,11 +1081,9 @@ function renderKPI() {
           <div style="font-size:10px;color:#8fa3c4">TL</div>
         </div>
         <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>PLANA UYUM</div>
-          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px">
-            <input type="number" inputmode="numeric" value="${dash.planaUyum}" placeholder="—" onchange="kpiDashGuncelle('planaUyum',this.value)" style="width:54px;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
-            <span style="font-size:18px;font-weight:800;color:#8fa3c4">%</span>
-          </div>
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">ARAÇ PLAN<br>GERÇEKLEŞEN UYUM</div>
+          <div style="font-size:24px;font-weight:800;color:#fff;margin-top:2px">${planUyum!==""?planUyum+"%":"—"}</div>
+          <div style="font-size:10px;color:#8fa3c4">${isKararli>0?isTamam+"/"+isKararli+" iş":"iş listesinden"}</div>
         </div>
         <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">SEVKİYAT<br>MİKTARI</div>
@@ -1323,7 +1320,7 @@ async function kpiRaporExcel() {
     {baslik:"FAZLA MESAİ SAAT", deger:String(v.mesaiSaat), birim:""},
     {baslik:"DEPO DOLULUK", deger:v.depoDoluluk!==""?v.depoDoluluk+"%":"—", birim:""},
     {baslik:"NAKLİYE MALİYETLERİ", deger:v.nakliyeMaliyet.toLocaleString("tr-TR")+" TL", birim:""},
-    {baslik:"NAKLİYE PLANA UYUM", deger:v.planaUyum!==""?v.planaUyum+"%":"—", birim:""},
+    {baslik:"ARAÇ PLAN GERÇEKLEŞEN UYUM", deger:v.planaUyum!==""?v.planaUyum+"%":"—", birim:""},
     {baslik:"SEVKİYAT MİKTARI", deger:v.sevkiyatSefer+" sefer", birim:v.sevkiyatYuk.toLocaleString("tr-TR")+" yük"},
     {baslik:"İŞ KAZASI MİKTARI", deger:v.isKazasi!==""?v.isKazasi:"—", birim:""}
   ];
@@ -2710,8 +2707,11 @@ function renderIsListesi() {
   var isler = DB.isler.filter(function(i){ return i.tarih===filtreTarih; });
   if(filtreKat!=="Tümü") isler = isler.filter(function(i){ return i.kategori===filtreKat; });
 
-  var bekleyen = isler.filter(function(i){ return i.durum!=="Tamamlandı"; }).length;
+  var bekleyen = isler.filter(function(i){ return i.durum!=="Tamamlandı" && i.durum!=="Tamamlanamadı"; }).length;
   var tamamlanan = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
+  var olmayan = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
+  var kararli = tamamlanan + olmayan;
+  var uyumYuzde = kararli>0 ? Math.round(tamamlanan/kararli*100) : null;
 
   setContent(`
     <div class="card">
@@ -2758,8 +2758,12 @@ function renderIsListesi() {
         <button onclick="isFiltreTarih('${new Date(Date.now()-86400000).toISOString().split('T')[0]}')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Dün</button>
       </div>
       <div style="font-size:12px;color:#636366">
-        ${isler.length} iş • <span style="color:#ff9f0a">${bekleyen} bekliyor</span> • <span style="color:#30d158">${tamamlanan} tamamlandı</span>
+        ${isler.length} iş • <span style="color:#ff9f0a">${bekleyen} bekliyor</span> • <span style="color:#30d158">${tamamlanan} tamam</span> • <span style="color:#ff453a">${olmayan} olmadı</span>
       </div>
+      ${uyumYuzde!==null?`<div style="margin-top:8px;background:#1c1c1e;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:#8fa3c4;font-weight:600">📊 Plan Gerçekleşen Uyum</span>
+        <span style="font-size:18px;font-weight:800;color:${uyumYuzde>=85?'#30d158':uyumYuzde>=60?'#ff9f0a':'#ff453a'}">${uyumYuzde}%</span>
+      </div>`:""}
     </div>
 
     ${isler.length===0?'<div class="empty"><div class="empty-icon">📋</div>Bu tarihte iş kaydı yok.</div>':""}
@@ -2773,15 +2777,22 @@ function renderIsListesi() {
         '<span style="font-size:11px;color:#636366">' + katIsler.length + ' iş</span>' +
         '</div>' +
         katIsler.map(function(is) {
-          return '<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid '+(is.durum==="Tamamlandı"?"#30d15844":"#48484a")+';opacity:'+(is.durum==="Tamamlandı"?".6":"1")+'">' +
+          var tamam = is.durum==="Tamamlandı";
+          var olmadi = is.durum==="Tamamlanamadı";
+          var kenar = tamam?"#30d15844":olmadi?"#ff453a44":"#48484a";
+          var opak = (tamam||olmadi)?".75":"1";
+          var firmaStil = tamam?"text-decoration:line-through;color:#636366":olmadi?"color:#ff8a80":"";
+          return '<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid '+kenar+';opacity:'+opak+'">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
             '<div style="flex:1">' +
-            '<div style="font-weight:700;font-size:13px;'+(is.durum==="Tamamlandı"?"text-decoration:line-through;color:#636366":"")+'">'+is.firma+'</div>' +
+            '<div style="font-weight:700;font-size:13px;'+firmaStil+'">'+is.firma+
+              (tamam?' <span style="font-size:10px;color:#30d158">✓ Tamamlandı</span>':"")+
+              (olmadi?' <span style="font-size:10px;color:#ff453a">✗ Olmadı</span>':"")+
             '</div>' +
-            '<div style="display:flex;gap:6px;align-items:center;margin-left:8px">' +
-            '<button onclick="isDurumDegistir('+is.id+')" style="background:'+(is.durum==="Tamamlandı"?"#3a3a3c":"#30d158")+';border:none;border-radius:6px;padding:4px 8px;color:'+(is.durum==="Tamamlandı"?"#aeaeb2":"#fff")+';font-size:11px;cursor:pointer;white-space:nowrap">' +
-            (is.durum==="Tamamlandı"?"↩ Geri Al":"✓ Tamam") +
-            '</button>' +
+            '</div>' +
+            '<div style="display:flex;gap:5px;align-items:center;margin-left:8px">' +
+            '<button onclick="isDurumSet('+is.id+',\'Tamamlandı\')" style="background:'+(tamam?"#30d158":"#3a3a3c")+';border:none;border-radius:6px;padding:5px 9px;color:'+(tamam?"#fff":"#aeaeb2")+';font-size:11px;cursor:pointer;white-space:nowrap">✓</button>' +
+            '<button onclick="isDurumSet('+is.id+',\'Tamamlanamadı\')" style="background:'+(olmadi?"#ff453a":"#3a3a3c")+';border:none;border-radius:6px;padding:5px 9px;color:'+(olmadi?"#fff":"#aeaeb2")+';font-size:11px;cursor:pointer;white-space:nowrap">✗</button>' +
             '<button onclick="isSil('+is.id+')" style="background:none;border:none;color:#ff453a;font-size:16px;cursor:pointer;padding:0">🗑️</button>' +
             '</div></div></div>';
         }).join("") +
@@ -2816,8 +2827,11 @@ async function isEkle() {
   renderIsListesi();
 }
 
-async function isDurumDegistir(id) {
-  const yeniDurum = DB.isler.find(i=>i.id===id)?.durum==="Tamamlandı"?"Bekliyor":"Tamamlandı";
+async function isDurumSet(id, hedef) {
+  var mevcut = DB.isler.find(i=>i.id===id);
+  if(!mevcut) return;
+  // Aynı duruma tekrar basılırsa Bekliyor'a dön (geri alma)
+  var yeniDurum = (mevcut.durum===hedef) ? "Bekliyor" : hedef;
   try { await isDurumGuncelleDB(id, yeniDurum); } catch(e) {}
   DB.isler = DB.isler.map(function(i){
     if(i.id===id) return Object.assign({},i,{durum:yeniDurum});
