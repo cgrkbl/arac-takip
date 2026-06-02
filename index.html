@@ -444,6 +444,8 @@ async function loginVerisiYukle() {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
         if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
         if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
+        if(a.anahtar==='kpi_depo_doluluk') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.depoDoluluk=a.deger; }
+        if(a.anahtar==='kpi_is_kazasi') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.isKazasi=a.deger; }
       });
     }
     if(soforler.data) DB.soforler = soforler.data;
@@ -978,14 +980,16 @@ async function donusKaydet(id) {
 // KPI
 // ═══════════════════════════════════════════
 function renderKPI() {
-  var filtreMod = window.KPI_MOD || "hafta";
+  var filtreMod = window.KPI_MOD || "bugun";
   var filtreSofor = window.KPI_SOFOR || "Tümü";
   window.KPI_MOD = filtreMod;
   window.KPI_SOFOR = filtreSofor;
 
   var bugun = bugunTR();
   var bas, bit;
-  if(filtreMod==="hafta") {
+  if(filtreMod==="bugun") {
+    bas = bugun; bit = bugun;
+  } else if(filtreMod==="hafta") {
     bit = bugun;
     bas = new Date(Date.now()-7*24*60*60*1000).toISOString().split("T")[0];
   } else if(filtreMod==="ay") {
@@ -1105,6 +1109,7 @@ function renderKPI() {
     <div class="card" style="margin-bottom:12px">
       <div class="section-title">DÖNEM</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button onclick="kpiMod('bugun')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="bugun"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="bugun"?"#fff":"#aeaeb2"}">Bugün</button>
         <button onclick="kpiMod('hafta')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="hafta"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="hafta"?"#fff":"#aeaeb2"}">Bu Hafta</button>
         <button onclick="kpiMod('ay')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="ay"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="ay"?"#fff":"#aeaeb2"}">Bu Ay</button>
         <button onclick="kpiMod('yil')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="yil"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="yil"?"#fff":"#aeaeb2"}">Bu Yıl</button>
@@ -1214,9 +1219,15 @@ function renderKPI() {
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
 
-function kpiDashGuncelle(alan, deger) {
+async function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
   window.KPI_DASH[alan] = deger;
+  // Supabase'e kalıcı kaydet (depo doluluk / iş kazası)
+  var anahtar = alan==="depoDoluluk" ? "kpi_depo_doluluk" : alan==="isKazasi" ? "kpi_is_kazasi" : null;
+  if(anahtar) {
+    try { await ayarKaydetDB(anahtar, deger); }
+    catch(e) { showToast("Kaydedilemedi, bağlantı hatası","error"); }
+  }
 }
 
 function kpiInputBoyut(el) {
@@ -1291,7 +1302,7 @@ async function kpiRaporExcel() {
   var v = window.KPI_DASH_VERI;
   if(!v) { renderKPI(); v = window.KPI_DASH_VERI; }
 
-  var donemAd = v.donem==="hafta"?"Bu Hafta":v.donem==="ay"?"Bu Ay":v.donem==="yil"?"Bu Yıl":"Tüm Zamanlar";
+  var donemAd = v.donem==="bugun"?"Bugün":v.donem==="hafta"?"Bu Hafta":v.donem==="ay"?"Bu Ay":v.donem==="yil"?"Bu Yıl":"Tüm Zamanlar";
   var bugun = new Date();
   var tarihStr = String(bugun.getDate()).padStart(2,"0")+"."+String(bugun.getMonth()+1).padStart(2,"0")+"."+bugun.getFullYear();
 
@@ -2516,6 +2527,8 @@ async function dbYukle() {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
         if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
         if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
+        if(a.anahtar==='kpi_depo_doluluk') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.depoDoluluk=a.deger; }
+        if(a.anahtar==='kpi_is_kazasi') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.isKazasi=a.deger; }
       });
     }
   } catch(e) {
@@ -2667,6 +2680,7 @@ async function talepSilDB(id) {
 }
 
 async function pinGuncelleDB(anahtar,deger) { await supa.from('ayarlar').update({deger}).eq('anahtar',anahtar); }
+async function ayarKaydetDB(anahtar,deger) { await supa.from('ayarlar').upsert({anahtar:anahtar,deger:String(deger)},{onConflict:'anahtar'}); }
 async function litreFiyatiGuncelleDB(deger) { await supa.from('ayarlar').update({deger}).eq('anahtar','litre_fiyati'); }
 
 
