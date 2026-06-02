@@ -420,6 +420,24 @@ function loginGiris() {
   }
 }
 
+// Giriş ekranı için PIN ve şoför listesini önceden yükler (giriş öncesi doğrulama için)
+async function loginVerisiYukle() {
+  try {
+    const [ayarlar, soforler] = await Promise.all([
+      supa.from('ayarlar').select('*'),
+      supa.from('soforler').select('*').order('isim'),
+    ]);
+    if(ayarlar.data) {
+      ayarlar.data.forEach(function(a) {
+        if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
+        if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
+        if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
+      });
+    }
+    if(soforler.data) DB.soforler = soforler.data;
+  } catch(e) { console.error("Giriş verisi yükleme hatası:", e); }
+}
+
 async function girisYap(kul) {
   KUL = kul;
   // Oturumu kaydet
@@ -1882,8 +1900,15 @@ async function adminPinDegistir() {
   if(eski !== ADMIN_PIN) { showToast("Mevcut PIN yanlış!","error"); return; }
   if(yeni.length !== 4) { showToast("PIN 4 haneli olmalı!","error"); return; }
   if(yeni !== yeni2) { showToast("Yeni PIN'ler eşleşmiyor!","error"); return; }
+  const eskiDeger = ADMIN_PIN;
   ADMIN_PIN = yeni;
-  try { await pinGuncelleDB('admin_pin', yeni); } catch(e) {}
+  try {
+    await pinGuncelleDB('admin_pin', yeni);
+  } catch(e) {
+    ADMIN_PIN = eskiDeger;
+    showToast("PIN güncellenemedi, bağlantı hatası!","error");
+    return;
+  }
   showToast("Yönetici PIN'i güncellendi!");
   renderAyarlar();
 }
@@ -1894,8 +1919,15 @@ async function yakitPinDegistir() {
   if(!yeni||!yeni2) { showToast("Tüm alanları doldurun!","error"); return; }
   if(yeni.length !== 4) { showToast("PIN 4 haneli olmalı!","error"); return; }
   if(yeni !== yeni2) { showToast("PIN'ler eşleşmiyor!","error"); return; }
+  const eskiDeger = YAKIT_PIN;
   YAKIT_PIN = yeni;
-  try { await pinGuncelleDB('yakit_pin', yeni); } catch(e) {}
+  try {
+    await pinGuncelleDB('yakit_pin', yeni);
+  } catch(e) {
+    YAKIT_PIN = eskiDeger;
+    showToast("PIN güncellenemedi, bağlantı hatası!","error");
+    return;
+  }
   showToast("Yakıt Personeli PIN'i güncellendi!");
   renderAyarlar();
 }
@@ -3341,7 +3373,9 @@ async function talepSil(id) {
 window.addEventListener("load", async ()=>{
   logo();
   document.querySelectorAll("#login-logo-img,#header-logo-img").forEach(img=>img.src=LOGO_SRC);
-  localStorage.removeItem("kucuker_db");
+
+  // Giriş öncesi gerçek PIN'leri ve şoför listesini yükle (eski PIN'le giriş hatasını önler)
+  await loginVerisiYukle();
 
   // Oturum kontrolü - yenileme sonrası otomatik giriş
   var savedKul = sessionStorage.getItem("kul");
