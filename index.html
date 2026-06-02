@@ -54,6 +54,17 @@ textarea{resize:vertical;}
 .tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#636366;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;}
 .tab-btn.active{color:#0a84ff;border-bottom-color:#0a84ff;}
 .tab-badge{position:absolute;top:5px;right:4px;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+#akordeon{background:#1c1c1e;padding:10px;border-bottom:1px solid #48484a;}
+.akr-mod{background:#2c2c2e;border-radius:10px;overflow:hidden;margin-bottom:8px;}
+.akr-bas{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;cursor:pointer;user-select:none;}
+.akr-bas.acik{background:#0a84ff;}
+.akr-bas .akr-baslik{color:#f2f2f7;font-weight:600;font-size:15px;}
+.akr-bas.acik .akr-baslik{color:#fff;}
+.akr-bas .akr-ok{color:#8fa3c4;font-size:14px;transition:transform 0.2s;}
+.akr-bas.acik .akr-ok{color:#fff;transform:rotate(90deg);}
+.akr-alt{padding:5px;}
+.akr-alt-btn{display:flex;align-items:center;gap:10px;padding:12px 15px;color:#aeaeb2;font-size:14px;border-radius:8px;cursor:pointer;}
+.akr-alt-btn.aktif{background:#3a3a3c;color:#0a84ff;font-weight:600;}
 
 /* Alt nav - admin */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#2c2c2e;border-top:1px solid #48484a;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
@@ -265,6 +276,7 @@ textarea{resize:vertical;}
     </div>
   </div>
   <div id="tab-bar"></div>
+  <div id="akordeon" style="display:none"></div>
   <div id="content"></div>
   <div id="bottom-nav" style="display:none"></div>
 </div>
@@ -485,17 +497,79 @@ function logout() {
 const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"},{id:"maliyet",label:"💰 Maliyet"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"},{id:"harita",label:"🗺️ Harita"}],
-  yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"mesailer",label:"⏰ Mesailer"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
-  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
+  yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
+  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
 };
+
+// "Diğer" menüsü için accordion modül yapısı
+const DIGER_MODULLER = [
+  {id:"yakit-mod", ikon:"⛽", baslik:"Yakıt", alt:[{id:"yakit",ikon:"➕",label:"Yakıt Girişi"},{id:"yakitliste",ikon:"📋",label:"Yakıt Listesi"}]},
+  {id:"bakim-mod", ikon:"🔧", baslik:"Bakım", alt:[{id:"bakim",ikon:"➕",label:"Bakım Girişi"},{id:"bakimliste",ikon:"📋",label:"Bakım Listesi"}]},
+  {id:"mesai-mod", ikon:"⏰", baslik:"Mesai", alt:[{id:"mesailer",ikon:"➕",label:"Mesai Girişi"},{id:"mesailiste",ikon:"📋",label:"Mesai Listesi"}]},
+  {id:"nakliye-mod", ikon:"🚚", baslik:"Nakliye", alt:[{id:"nakliye",ikon:"➕",label:"Nakliye Girişi"},{id:"nakliyeliste",ikon:"📋",label:"Nakliye Listesi"}]},
+  {id:"is-mod", ikon:"📋", baslik:"İş Listesi", alt:[{id:"islistesi",ikon:"📋",label:"İş Listesi"}]},
+  {id:"talep-mod", ikon:"🚗", baslik:"Talepler", alt:[{id:"talepler",ikon:"🚗",label:"Araç Talepleri"}]},
+];
 
 function altMenuSec(menu) {
   AKTIF_MENU = menu;
   sessionStorage.setItem("aktif_menu", menu);
-  const tablar = MENU_GRUPLARI[menu];
-  renderTabBar(tablar);
   renderBottomNav();
-  tabSec(tablar[0].id);
+  if(menu==="diger") {
+    // Accordion göster, tab-bar gizle
+    document.getElementById("tab-bar").style.display = "none";
+    document.getElementById("akordeon").style.display = "block";
+    // İlk modülü aç ve ilk alt sekmesini seç
+    window.AKR_ACIK = window.AKR_ACIK || DIGER_MODULLER[0].id;
+    var acikMod = DIGER_MODULLER.find(function(m){return m.id===window.AKR_ACIK;}) || DIGER_MODULLER[0];
+    renderAkordeon();
+    tabSec(acikMod.alt[0].id);
+  } else {
+    document.getElementById("akordeon").style.display = "none";
+    document.getElementById("tab-bar").style.display = "flex";
+    const tablar = MENU_GRUPLARI[menu];
+    renderTabBar(tablar);
+    tabSec(tablar[0].id);
+  }
+}
+
+function renderAkordeon() {
+  var html = DIGER_MODULLER.map(function(mod){
+    var acik = window.AKR_ACIK===mod.id;
+    var altHtml = "";
+    if(acik) {
+      altHtml = '<div class="akr-alt">' + mod.alt.map(function(a){
+        var aktif = AKTIF_TAB===a.id;
+        return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')">'+
+          '<span>'+a.ikon+'</span><span>'+a.label+'</span></div>';
+      }).join("") + '</div>';
+    }
+    return '<div class="akr-mod">'+
+      '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')">'+
+        '<span class="akr-baslik">'+mod.ikon+' '+mod.baslik+'</span>'+
+        '<span class="akr-ok">'+(acik?"▾":"▸")+'</span>'+
+      '</div>'+altHtml+
+    '</div>';
+  }).join("");
+  document.getElementById("akordeon").innerHTML = html;
+}
+
+function akrToggle(modId) {
+  if(window.AKR_ACIK===modId) {
+    // Zaten açıksa kapatma; tek bir modül hep açık kalsın (içerik göstermek için)
+    renderAkordeon();
+    return;
+  }
+  window.AKR_ACIK = modId;
+  var mod = DIGER_MODULLER.find(function(m){return m.id===modId;});
+  renderAkordeon();
+  // Açılan modülün ilk alt sekmesini göster
+  if(mod) tabSec(mod.alt[0].id);
+}
+
+function akrSec(tabId) {
+  tabSec(tabId);
+  renderAkordeon();
 }
 
 function renderBottomNav() {
@@ -543,11 +617,12 @@ function tabSec(id) {
       id==="soforler"?"👤":id==="konumlar"?"📍":id==="yakit"?"⛽":
       id==="yakitliste"?"📋":id==="bakim"?"🔧":
       id==="bakimliste"?"📋":id==="nakliye"?"🚚":
-      id==="nakliyeliste"?"📋":"XXX"
+      id==="nakliyeliste"?"📋":id==="mesailer"?"⏰":
+      id==="mesailiste"?"📋":"XXX"
     ));
   });
   // Tekrar tab bar'ı doğru render et
-  if(KUL.rol==="admin") renderTabBar(MENU_GRUPLARI[AKTIF_MENU]);
+  if(KUL.rol==="admin") { if(AKTIF_MENU!=="diger") renderTabBar(MENU_GRUPLARI[AKTIF_MENU]); }
   else if(KUL.rol==="yakit") renderTabBar([{id:"yakit",label:"⛽ Yakıt Girişi"},{id:"yakitliste",label:"📋 Yakıt Listesi"}]);
   else renderSoforTabBar();
 
@@ -567,6 +642,7 @@ function tabSec(id) {
     case "bakimliste": renderBakimListe(); break;
     case "ayarlar":    renderAyarlar(); break;
     case "mesailer":   renderMesailer(); break;
+    case "mesailiste": renderMesaiListe(); break;
     case "talepler":   renderTalepler(); break;
     case "nakliye":    renderNakliye(); break;
     case "nakliyeliste": renderNakliyeListe(); break;
@@ -2879,19 +2955,6 @@ async function isExcel() {
 // MESAİLER
 // ═══════════════════════════════════════════
 function renderMesailer() {
-  var filtreSofor = window.MESAI_FILTRE_SOFOR || "Tümü";
-  window.MESAI_FILTRE_SOFOR = filtreSofor;
-
-  var mesailer = DB.mesailer;
-  if(filtreSofor !== "Tümü") mesailer = mesailer.filter(function(m){ return m.sofor===filtreSofor; });
-  var filtreBas = window.MESAI_FILTRE_BAS || "";
-  var filtreBit = window.MESAI_FILTRE_BIT || "";
-  if(filtreBas) mesailer = mesailer.filter(function(m){ return m.tarih>=filtreBas; });
-  if(filtreBit) mesailer = mesailer.filter(function(m){ return m.tarih<=filtreBit; });
-
-  // Toplam mesai süresi
-  var toplamDk = mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); }, 0);
-
   setContent(`
     <div class="card">
       <div class="section-title">YENİ MESAİ EKLE</div>
@@ -2925,7 +2988,25 @@ function renderMesailer() {
         <button class="btn btn-blue" onclick="mesaiEkle()">+ Mesai Ekle</button>
       </div>
     </div>
+    <div style="height:20px"></div>
+  `);
+}
 
+function renderMesaiListe() {
+  var filtreSofor = window.MESAI_FILTRE_SOFOR || "Tümü";
+  window.MESAI_FILTRE_SOFOR = filtreSofor;
+
+  var mesailer = DB.mesailer;
+  if(filtreSofor !== "Tümü") mesailer = mesailer.filter(function(m){ return m.sofor===filtreSofor; });
+  var filtreBas = window.MESAI_FILTRE_BAS || "";
+  var filtreBit = window.MESAI_FILTRE_BIT || "";
+  if(filtreBas) mesailer = mesailer.filter(function(m){ return m.tarih>=filtreBas; });
+  if(filtreBit) mesailer = mesailer.filter(function(m){ return m.tarih<=filtreBit; });
+
+  // Toplam mesai süresi
+  var toplamDk = mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); }, 0);
+
+  setContent(`
     <div class="card">
       <div class="section-title">FİLTRELE</div>
       <div style="display:flex;flex-direction:column;gap:8px">
@@ -3017,7 +3098,7 @@ async function mesaiEkle() {
     const data = await mesaiEkleDB(yeniMesai);
     DB.mesailer.unshift({...yeniMesai, id:data.id});
     showToast(sofor+" mesai eklendi!");
-    renderMesailer();
+    if(AKTIF_TAB==="mesailiste") renderMesaiListe(); else renderMesailer();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
@@ -3025,20 +3106,20 @@ async function mesaiSil(id) {
   try { await mesaiSilDB(id); } catch(e) {}
   DB.mesailer = DB.mesailer.filter(function(m){ return m.id!==id; });
   showToast("Mesai silindi.");
-  renderMesailer();
+  renderMesaiListe();
 }
 
-function mesaiFiltreGuncelle(v) { window.MESAI_FILTRE_SOFOR=v; renderMesailer(); }
+function mesaiFiltreGuncelle(v) { window.MESAI_FILTRE_SOFOR=v; renderMesaiListe(); }
 function mesaiTarihFiltre(tip,v) {
   if(tip==="bas") window.MESAI_FILTRE_BAS=v;
   else window.MESAI_FILTRE_BIT=v;
-  renderMesailer();
+  renderMesaiListe();
 }
 function mesaiHizliFiltre(gun) {
   if(gun===0) { window.MESAI_FILTRE_BAS=""; window.MESAI_FILTRE_BIT=""; }
   else if(gun===1) { window.MESAI_FILTRE_BAS=bugunTR(); window.MESAI_FILTRE_BIT=bugunTR(); }
   else { window.MESAI_FILTRE_BIT=bugunTR(); window.MESAI_FILTRE_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0]; }
-  renderMesailer();
+  renderMesaiListe();
 }
 
 
