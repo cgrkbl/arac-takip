@@ -63,6 +63,8 @@ textarea{resize:vertical;}
 .akr-panel{display:flex;gap:8px;padding:10px;flex-wrap:wrap;}
 .akr-alt-btn{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#2c2c2e;color:#aeaeb2;font-size:14px;border-radius:8px;cursor:pointer;flex:1;min-width:130px;justify-content:center;}
 .akr-alt-btn.aktif{background:#0a84ff;color:#fff;font-weight:600;}
+.kpi-input{-moz-appearance:textfield;appearance:textfield;}
+.kpi-input::-webkit-outer-spin-button,.kpi-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 
 /* Alt nav - admin */
 #bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#2c2c2e;border-top:1px solid #48484a;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
@@ -1068,10 +1070,10 @@ function renderKPI() {
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
           <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
         </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">DEPO<br>DOLULUK</div>
-          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px">
-            <input type="number" inputmode="numeric" value="${dash.depoDoluluk}" placeholder="—" onchange="kpiDashGuncelle('depoDoluluk',this.value)" style="width:54px;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
+          <div style="display:inline-flex;align-items:center;justify-content:center;gap:1px">
+            <input type="number" inputmode="numeric" class="kpi-input" min="0" max="100" value="${dash.depoDoluluk}" placeholder="—" oninput="if(this.value>100)this.value=100;kpiInputBoyut(this);" onchange="kpiDashGuncelle('depoDoluluk',this.value)" style="width:${(String(dash.depoDoluluk).length||1)+1}ch;min-width:1ch;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
             <span style="font-size:18px;font-weight:800;color:#8fa3c4">%</span>
           </div>
         </div>
@@ -1090,10 +1092,10 @@ function renderKPI() {
           <div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">${sevkiyatSeferSayisi}</div>
           <div style="font-size:10px;color:#8fa3c4">sefer • ${sevkiyatYukMiktari.toLocaleString("tr-TR")} yük</div>
         </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">İŞ KAZASI<br>MİKTARI</div>
-          <input type="number" inputmode="numeric" value="${dash.isKazasi}" placeholder="—" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
-          <div style="font-size:10px;color:#8fa3c4">adet</div>
+          <input type="number" inputmode="numeric" class="kpi-input" min="0" max="9999" value="${dash.isKazasi}" placeholder="—" oninput="if(this.value>9999)this.value=9999;kpiInputBoyut(this);" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:${(String(dash.isKazasi).length||1)+0.5}ch;min-width:1ch;max-width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
+          <div style="font-size:10px;color:#8fa3c4;margin-top:2px">adet</div>
         </div>
       </div>
       <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
@@ -1214,6 +1216,11 @@ function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
 function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
   window.KPI_DASH[alan] = deger;
+}
+
+function kpiInputBoyut(el) {
+  var uzunluk = (el.value || "").length || 1;
+  el.style.width = (uzunluk + 0.5) + "ch";
 }
 
 // Haftalık değer hesaplayıcı: son N haftanın hafta-bazlı toplamını döndürür
