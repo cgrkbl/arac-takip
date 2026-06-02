@@ -498,7 +498,7 @@ const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"},{id:"maliyet",label:"💰 Maliyet"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"},{id:"harita",label:"🗺️ Harita"}],
   yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
-  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
+  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"islisteleme",label:"📋 İş Liste"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
 };
 
 // "Diğer" menüsü için accordion modül yapısı
@@ -507,7 +507,7 @@ const DIGER_MODULLER = [
   {id:"bakim-mod", ikon:"🔧", baslik:"Bakım", alt:[{id:"bakim",ikon:"➕",label:"Bakım Girişi"},{id:"bakimliste",ikon:"📋",label:"Bakım Listesi"}]},
   {id:"mesai-mod", ikon:"⏰", baslik:"Mesai", alt:[{id:"mesailer",ikon:"➕",label:"Mesai Girişi"},{id:"mesailiste",ikon:"📋",label:"Mesai Listesi"}]},
   {id:"nakliye-mod", ikon:"🚚", baslik:"Nakliye", alt:[{id:"nakliye",ikon:"➕",label:"Nakliye Girişi"},{id:"nakliyeliste",ikon:"📋",label:"Nakliye Listesi"}]},
-  {id:"is-mod", ikon:"📋", baslik:"İş Listesi", alt:[{id:"islistesi",ikon:"📋",label:"İş Listesi"}]},
+  {id:"is-mod", ikon:"📋", baslik:"İş Listesi", alt:[{id:"islistesi",ikon:"➕",label:"Yapılacak İş"},{id:"islisteleme",ikon:"📋",label:"İş Listesi"}]},
   {id:"talep-mod", ikon:"🚗", baslik:"Talepler", alt:[{id:"talepler",ikon:"🚗",label:"Araç Talepleri"}]},
 ];
 
@@ -641,6 +641,7 @@ function tabSec(id) {
     case "nakliyeliste": renderNakliyeListe(); break;
     case "maliyet":    renderMaliyetRaporu(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
+    case "islisteleme": window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListe(); break;
     case "excel":      renderExcel(); break;
   }
   window.scrollTo(0,0);
@@ -2703,23 +2704,6 @@ function bugunTR() {
 }
 
 function renderIsListesi() {
-  var bugun = bugunTR();
-  // Eğer filtre tarihi daha önce set edilmemişse veya başka bir günde set edildiyse bugünü kullan
-  if(!window.IS_FILTRE_TARIH_MANUEL) window.IS_FILTRE_TARIH = bugun;
-  var filtreTarih = window.IS_FILTRE_TARIH || bugun;
-  window.IS_FILTRE_TARIH = filtreTarih;
-  var filtreKat = window.IS_FILTRE_KAT || "Tümü";
-  window.IS_FILTRE_KAT = filtreKat;
-
-  var isler = DB.isler.filter(function(i){ return i.tarih===filtreTarih; });
-  if(filtreKat!=="Tümü") isler = isler.filter(function(i){ return i.kategori===filtreKat; });
-
-  var bekleyen = isler.filter(function(i){ return i.durum!=="Tamamlandı" && i.durum!=="Tamamlanamadı"; }).length;
-  var tamamlanan = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
-  var olmayan = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
-  var kararli = tamamlanan + olmayan;
-  var uyumYuzde = kararli>0 ? Math.round(tamamlanan/kararli*100) : null;
-
   setContent(`
     <div class="card">
       <div class="section-title">YENİ İŞ EKLE</div>
@@ -2744,7 +2728,28 @@ function renderIsListesi() {
         <button class="btn btn-blue" onclick="isEkle()">+ İş Ekle</button>
       </div>
     </div>
+    <div style="height:20px"></div>
+  `);
+}
 
+function renderIsListe() {
+  var bugun = bugunTR();
+  if(!window.IS_FILTRE_TARIH_MANUEL) window.IS_FILTRE_TARIH = bugun;
+  var filtreTarih = window.IS_FILTRE_TARIH || bugun;
+  window.IS_FILTRE_TARIH = filtreTarih;
+  var filtreKat = window.IS_FILTRE_KAT || "Tümü";
+  window.IS_FILTRE_KAT = filtreKat;
+
+  var isler = DB.isler.filter(function(i){ return i.tarih===filtreTarih; });
+  if(filtreKat!=="Tümü") isler = isler.filter(function(i){ return i.kategori===filtreKat; });
+
+  var bekleyen = isler.filter(function(i){ return i.durum!=="Tamamlandı" && i.durum!=="Tamamlanamadı"; }).length;
+  var tamamlanan = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
+  var olmayan = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
+  var kararli = tamamlanan + olmayan;
+  var uyumYuzde = kararli>0 ? Math.round(tamamlanan/kararli*100) : null;
+
+  setContent(`
     <div class="card">
       <div class="section-title">FİLTRELE</div>
       <div class="row" style="margin-bottom:8px">
@@ -2760,12 +2765,12 @@ function renderIsListesi() {
           </select>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
         <button onclick="isFiltreTarih('${bugun}')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bugün</button>
         <button onclick="isFiltreTarih('${new Date(Date.now()-86400000).toISOString().split('T')[0]}')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Dün</button>
       </div>
       <div style="font-size:12px;color:#636366">
-        ${isler.length} iş • <span style="color:#ff9f0a">${bekleyen} bekliyor</span> • <span style="color:#30d158">${tamamlanan} tamam</span> • <span style="color:#ff453a">${olmayan} olmadı</span>
+        ${isler.length} iş • <span style="color:#ff9f0a">${bekleyen} bekliyor</span> • <span style="color:#30d158">${tamamlanan} Tamamlandı</span> • <span style="color:#ff453a">${olmayan} Tamamlanamadı</span>
       </div>
       ${uyumYuzde!==null?`<div style="margin-top:8px;background:#1c1c1e;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:12px;color:#8fa3c4;font-weight:600">📊 Plan Gerçekleşen Uyum</span>
@@ -2790,16 +2795,16 @@ function renderIsListesi() {
           var opak = (tamam||olmadi)?".75":"1";
           var firmaStil = tamam?"text-decoration:line-through;color:#636366":olmadi?"color:#ff8a80":"";
           return '<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid '+kenar+';opacity:'+opak+'">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
             '<div style="flex:1">' +
             '<div style="font-weight:700;font-size:13px;'+firmaStil+'">'+is.firma+
               (tamam?' <span style="font-size:10px;color:#30d158">✓ Tamamlandı</span>':"")+
-              (olmadi?' <span style="font-size:10px;color:#ff453a">✗ Olmadı</span>':"")+
+              (olmadi?' <span style="font-size:10px;color:#ff453a">✗ Tamamlanamadı</span>':"")+
             '</div>' +
             '</div>' +
             '<div style="display:flex;gap:5px;align-items:center;margin-left:8px">' +
-            '<button onclick="isDurumSet('+is.id+',\'Tamamlandı\')" style="background:'+(tamam?"#30d158":"#3a3a3c")+';border:none;border-radius:6px;padding:5px 9px;color:'+(tamam?"#fff":"#aeaeb2")+';font-size:11px;cursor:pointer;white-space:nowrap">✓</button>' +
-            '<button onclick="isDurumSet('+is.id+',\'Tamamlanamadı\')" style="background:'+(olmadi?"#ff453a":"#3a3a3c")+';border:none;border-radius:6px;padding:5px 9px;color:'+(olmadi?"#fff":"#aeaeb2")+';font-size:11px;cursor:pointer;white-space:nowrap">✗</button>' +
+            '<button onclick="isDurumSet('+is.id+',\'Tamamlandı\')" style="background:'+(tamam?"#30d158":"#30d15822")+';border:1px solid #30d158;border-radius:6px;padding:5px 9px;color:'+(tamam?"#fff":"#30d158")+';font-size:11px;cursor:pointer;white-space:nowrap">✓</button>' +
+            '<button onclick="isDurumSet('+is.id+',\'Tamamlanamadı\')" style="background:'+(olmadi?"#ff453a":"#ff453a22")+';border:1px solid #ff453a;border-radius:6px;padding:5px 9px;color:'+(olmadi?"#fff":"#ff453a")+';font-size:11px;cursor:pointer;white-space:nowrap">✗</button>' +
             '<button onclick="isSil('+is.id+')" style="background:none;border:none;color:#ff453a;font-size:16px;cursor:pointer;padding:0">🗑️</button>' +
             '</div></div></div>';
         }).join("") +
@@ -2831,7 +2836,7 @@ async function isEkle() {
     DB.isler.push({...yeniIs, id: data.id});
   } catch(e) { DB.isler.push({...yeniIs, id: Date.now()}); }
   showToast(firma+" eklendi!");
-  renderIsListesi();
+  if(AKTIF_TAB==="islisteleme") renderIsListe(); else renderIsListesi();
 }
 
 async function isDurumSet(id, hedef) {
@@ -2844,17 +2849,17 @@ async function isDurumSet(id, hedef) {
     if(i.id===id) return Object.assign({},i,{durum:yeniDurum});
     return i;
   });
-  renderIsListesi();
+  renderIsListe();
 }
 
 async function isSil(id) {
   try { await isSilDB(id); } catch(e) {}
   DB.isler = DB.isler.filter(function(i){ return i.id!==id; });
-  renderIsListesi();
+  renderIsListe();
 }
 
-function isFiltreTarih(t) { window.IS_FILTRE_TARIH=t; window.IS_FILTRE_TARIH_MANUEL=true; renderIsListesi(); }
-function isFiltreKat(k) { window.IS_FILTRE_KAT=k; renderIsListesi(); }
+function isFiltreTarih(t) { window.IS_FILTRE_TARIH=t; window.IS_FILTRE_TARIH_MANUEL=true; renderIsListe(); }
+function isFiltreKat(k) { window.IS_FILTRE_KAT=k; renderIsListe(); }
 
 async function isExcel() {
   var tarih = window.IS_FILTRE_TARIH || bugunTR();
