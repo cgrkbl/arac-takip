@@ -960,7 +960,72 @@ function renderKPI() {
   var nakData = DB.nakliyeler;
   if(bas) nakData = nakData.filter(n=>n.tarih>=bas&&n.tarih<=bit);
 
+  // ── Yönetim Dashboard'u için ek hesaplamalar ──
+  var mesaiData = DB.mesailer || [];
+  if(bas) mesaiData = mesaiData.filter(m=>m.tarih>=bas&&m.tarih<=bit);
+  var toplamMesaiSaat = Math.round(mesaiData.reduce((a,m)=>a+(m.sure_dakika||0),0)/60);
+  var nakliyeMaliyet = nakData.reduce((a,n)=>a+(n.fiyat||0),0);
+  var sevkiyatSeferSayisi = tSefer;
+  var sevkiyatYukMiktari = tYuk;
+  // Elle girilen KPI'lar (oturum boyunca saklanır)
+  window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
+  var dash = window.KPI_DASH;
+  // Excel için sakla
+  window.KPI_DASH_VERI = {
+    donem: filtreMod, bas: bas, bit: bit,
+    mesaiSaat: toplamMesaiSaat,
+    nakliyeMaliyet: nakliyeMaliyet,
+    sevkiyatSefer: sevkiyatSeferSayisi,
+    sevkiyatYuk: sevkiyatYukMiktari,
+    depoDoluluk: dash.depoDoluluk,
+    planaUyum: dash.planaUyum,
+    isKazasi: dash.isKazasi
+  };
+
   setContent(`
+    <div class="card" style="background:linear-gradient(135deg,#1a2744,#0f1828);border:1px solid #2a3f5f;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px">📊 KÜÇÜKER LOJİSTİK KPI</div>
+        <button onclick="kpiRaporExcel()" style="background:#0a84ff;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer">⬇️ Excel İndir</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
+          <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">DEPO<br>DOLULUK</div>
+          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px">
+            <input type="number" inputmode="numeric" value="${dash.depoDoluluk}" placeholder="—" onchange="kpiDashGuncelle('depoDoluluk',this.value)" style="width:54px;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
+            <span style="font-size:18px;font-weight:800;color:#8fa3c4">%</span>
+          </div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
+          <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px">${nakliyeMaliyet.toLocaleString("tr-TR")}</div>
+          <div style="font-size:10px;color:#8fa3c4">TL</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>PLANA UYUM</div>
+          <div style="display:flex;align-items:baseline;justify-content:center;gap:2px">
+            <input type="number" inputmode="numeric" value="${dash.planaUyum}" placeholder="—" onchange="kpiDashGuncelle('planaUyum',this.value)" style="width:54px;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
+            <span style="font-size:18px;font-weight:800;color:#8fa3c4">%</span>
+          </div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">SEVKİYAT<br>MİKTARI</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">${sevkiyatSeferSayisi}</div>
+          <div style="font-size:10px;color:#8fa3c4">sefer • ${sevkiyatYukMiktari.toLocaleString("tr-TR")} yük</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">İŞ KAZASI<br>MİKTARI</div>
+          <input type="number" inputmode="numeric" value="${dash.isKazasi}" placeholder="—" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none"/>
+          <div style="font-size:10px;color:#8fa3c4">adet</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
+    </div>
+
     <div class="card" style="margin-bottom:12px">
       <div class="section-title">DÖNEM</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
@@ -1072,6 +1137,177 @@ function renderKPI() {
 }
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
+
+function kpiDashGuncelle(alan, deger) {
+  window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
+  window.KPI_DASH[alan] = deger;
+}
+
+// Haftalık değer hesaplayıcı: son N haftanın hafta-bazlı toplamını döndürür
+function kpiHaftalikMesai(haftaSayisi) {
+  var sonuc = [];
+  var simdi = new Date();
+  for(var w=haftaSayisi-1; w>=0; w--) {
+    var bitMs = simdi.getTime() - w*7*24*60*60*1000;
+    var basMs = bitMs - 7*24*60*60*1000;
+    var bas = new Date(basMs).toISOString().split("T")[0];
+    var bit = new Date(bitMs).toISOString().split("T")[0];
+    var dk = (DB.mesailer||[]).filter(function(m){return m.tarih>bas&&m.tarih<=bit;})
+      .reduce(function(a,m){return a+(m.sure_dakika||0);},0);
+    var haftaNo = haftaNumarasi(new Date(bitMs));
+    sonuc.push({label:"W"+haftaNo, deger:Math.round(dk/60)});
+  }
+  return sonuc;
+}
+
+function haftaNumarasi(d) {
+  var onceki = new Date(Date.UTC(d.getFullYear(),0,1));
+  var gun = Math.floor((d - onceki)/(24*60*60*1000));
+  return Math.ceil((gun + onceki.getUTCDay()+1)/7);
+}
+
+// Canvas'ta mini trend çizgisi çizip dataURL döndürür (Excel'e gömmek için)
+function miniTrendPNG(noktalar, renk) {
+  var W=300, H=180;
+  var cv = document.createElement("canvas");
+  cv.width=W; cv.height=H;
+  var ctx = cv.getContext("2d");
+  ctx.fillStyle = "#15233d";
+  ctx.fillRect(0,0,W,H);
+  if(!noktalar || noktalar.length<2) {
+    ctx.fillStyle="#5a6f8f"; ctx.font="14px Arial"; ctx.textAlign="center";
+    ctx.fillText("Veri yok", W/2, H/2);
+    return cv.toDataURL("image/png");
+  }
+  var degerler = noktalar.map(function(n){return n.deger;});
+  var max = Math.max.apply(null,degerler), min = Math.min.apply(null,degerler);
+  if(max===min){max=max+1;min=min-1;}
+  var padX=40, padY=40;
+  var step = (W-2*padX)/(noktalar.length-1);
+  function y(v){ return H-padY - ((v-min)/(max-min))*(H-2*padY); }
+  // çizgi
+  ctx.strokeStyle = renk; ctx.lineWidth=3; ctx.beginPath();
+  noktalar.forEach(function(n,i){
+    var px=padX+i*step, py=y(n.deger);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+  // değer etiketleri ve hafta etiketleri
+  ctx.fillStyle="#fff"; ctx.font="bold 16px Arial"; ctx.textAlign="center";
+  noktalar.forEach(function(n,i){
+    var px=padX+i*step, py=y(n.deger);
+    ctx.fillText(String(n.deger), px, py-10);
+  });
+  ctx.fillStyle="#8fa3c4"; ctx.font="12px Arial";
+  noktalar.forEach(function(n,i){
+    var px=padX+i*step;
+    ctx.fillText(n.label, px, H-12);
+  });
+  return cv.toDataURL("image/png");
+}
+
+async function kpiRaporExcel() {
+  var v = window.KPI_DASH_VERI;
+  if(!v) { renderKPI(); v = window.KPI_DASH_VERI; }
+
+  var donemAd = v.donem==="hafta"?"Bu Hafta":v.donem==="ay"?"Bu Ay":v.donem==="yil"?"Bu Yıl":"Tüm Zamanlar";
+  var bugun = new Date();
+  var tarihStr = String(bugun.getDate()).padStart(2,"0")+"."+String(bugun.getMonth()+1).padStart(2,"0")+"."+bugun.getFullYear();
+
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet("KPI Raporu");
+
+  // 6 sütun, her biri eşit
+  for(var c=1;c<=6;c++) ws.getColumn(c).width = 18;
+
+  var LACIVERT = "FF15233D";
+  var KOYU_BASLIK = "FF0F2147";
+  var BEYAZ = "FFFFFFFF";
+  var ACIK_MAVI = "FF8FA3C4";
+
+  // Satır 1: Ana başlık şeridi
+  ws.getRow(1).height = 40;
+  ws.mergeCells(1,1,1,6);
+  var bas = ws.getCell(1,1);
+  bas.value = "KÜÇÜKER LOJİSTİK KPI - "+bugun.getFullYear();
+  bas.font = {name:"Arial",bold:true,size:18,color:{argb:BEYAZ}};
+  bas.fill = {type:"pattern",pattern:"solid",fgColor:{argb:KOYU_BASLIK}};
+  bas.alignment = {horizontal:"center",vertical:"middle"};
+
+  // Satır 2: dönem bilgisi
+  ws.getRow(2).height = 18;
+  ws.mergeCells(2,1,2,6);
+  var donemCell = ws.getCell(2,1);
+  donemCell.value = "Dönem: "+donemAd+(v.bas?"  ("+v.bas+" → "+v.bit+")":"")+"   |   Rapor Tarihi: "+tarihStr;
+  donemCell.font = {name:"Arial",size:10,italic:true,color:{argb:"FF666666"}};
+  donemCell.alignment = {horizontal:"center"};
+
+  // KPI kartları - başlık satırı (satır 4) ve değer satırı (satır 5)
+  var kartlar = [
+    {baslik:"FAZLA MESAİ SAAT", deger:String(v.mesaiSaat), birim:""},
+    {baslik:"DEPO DOLULUK", deger:v.depoDoluluk!==""?v.depoDoluluk+"%":"—", birim:""},
+    {baslik:"NAKLİYE MALİYETLERİ", deger:v.nakliyeMaliyet.toLocaleString("tr-TR")+" TL", birim:""},
+    {baslik:"NAKLİYE PLANA UYUM", deger:v.planaUyum!==""?v.planaUyum+"%":"—", birim:""},
+    {baslik:"SEVKİYAT MİKTARI", deger:v.sevkiyatSefer+" sefer", birim:v.sevkiyatYuk.toLocaleString("tr-TR")+" yük"},
+    {baslik:"İŞ KAZASI MİKTARI", deger:v.isKazasi!==""?v.isKazasi:"—", birim:""}
+  ];
+
+  ws.getRow(4).height = 30;
+  ws.getRow(5).height = 44;
+  ws.getRow(6).height = 16;
+  kartlar.forEach(function(k,i){
+    var col = i+1;
+    var bCell = ws.getCell(4,col);
+    bCell.value = k.baslik;
+    bCell.font = {name:"Arial",bold:true,size:10,color:{argb:ACIK_MAVI}};
+    bCell.fill = {type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
+    bCell.alignment = {horizontal:"center",vertical:"middle",wrapText:true};
+    bCell.border = {top:{style:"thin",color:{argb:"FF2A3F5F"}},left:{style:"thin",color:{argb:"FF2A3F5F"}},right:{style:"thin",color:{argb:"FF2A3F5F"}}};
+
+    var dCell = ws.getCell(5,col);
+    dCell.value = k.deger;
+    dCell.font = {name:"Arial",bold:true,size:20,color:{argb:BEYAZ}};
+    dCell.fill = {type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
+    dCell.alignment = {horizontal:"center",vertical:"middle"};
+    dCell.border = {left:{style:"thin",color:{argb:"FF2A3F5F"}},right:{style:"thin",color:{argb:"FF2A3F5F"}}};
+
+    var uCell = ws.getCell(6,col);
+    uCell.value = k.birim;
+    uCell.font = {name:"Arial",size:9,color:{argb:ACIK_MAVI}};
+    uCell.fill = {type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
+    uCell.alignment = {horizontal:"center",vertical:"top"};
+    uCell.border = {bottom:{style:"thin",color:{argb:"FF2A3F5F"}},left:{style:"thin",color:{argb:"FF2A3F5F"}},right:{style:"thin",color:{argb:"FF2A3F5F"}}};
+  });
+
+  // Mini trend grafiği: Haftalık Fazla Mesai (son 3 hafta)
+  ws.getRow(8).height = 20;
+  var trendBaslik = ws.getCell(8,1);
+  trendBaslik.value = "Haftalık Fazla Mesai (Saat)";
+  trendBaslik.font = {name:"Arial",bold:true,size:11,color:{argb:"FF333333"}};
+
+  try {
+    var mesaiTrend = kpiHaftalikMesai(3);
+    var png = miniTrendPNG(mesaiTrend, "#4a90e2");
+    var imgId = wb.addImage({base64: png, extension:"png"});
+    // satır 9-15 arası, sütun A-C civarı
+    ws.addImage(imgId, {tl:{col:0,row:8}, ext:{width:300,height:180}});
+  } catch(e) { console.error("Trend grafiği hatası:",e); }
+
+  try {
+    var buffer = await wb.xlsx.writeBuffer();
+    var blob = new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "KPI_Raporu_"+bugun.getFullYear()+"-"+String(bugun.getMonth()+1).padStart(2,"0")+"-"+String(bugun.getDate()).padStart(2,"0")+".xlsx";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    showToast("KPI raporu indirildi!");
+  } catch(e) {
+    showToast("Hata: "+e.message,"error");
+  }
+}
 
 function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
   const canvas = document.getElementById(canvasId);
