@@ -486,7 +486,7 @@ const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"},{id:"maliyet",label:"💰 Maliyet"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"},{id:"harita",label:"🗺️ Harita"}],
   yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"mesailer",label:"⏰ Mesailer"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
-  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"}],
+  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
 };
 
 function altMenuSec(menu) {
@@ -541,7 +541,9 @@ function tabSec(id) {
       id==="rapor"?"📊":id==="harita"?"🗺️":id==="cikis"?"🚀":
       id==="aktif"?"🟡":id==="liste"?"📋":id==="araclar"?"🚗":
       id==="soforler"?"👤":id==="konumlar"?"📍":id==="yakit"?"⛽":
-      id==="yakitliste"?"📋":id==="bakim"?"🔧":"XXX"
+      id==="yakitliste"?"📋":id==="bakim"?"🔧":
+      id==="bakimliste"?"📋":id==="nakliye"?"🚚":
+      id==="nakliyeliste"?"📋":"XXX"
     ));
   });
   // Tekrar tab bar'ı doğru render et
@@ -562,10 +564,12 @@ function tabSec(id) {
     case "yakit":      renderYakit(); break;
     case "yakitliste": renderYakitListe(); break;
     case "bakim":      renderBakim(); break;
+    case "bakimliste": renderBakimListe(); break;
     case "ayarlar":    renderAyarlar(); break;
     case "mesailer":   renderMesailer(); break;
     case "talepler":   renderTalepler(); break;
     case "nakliye":    renderNakliye(); break;
+    case "nakliyeliste": renderNakliyeListe(); break;
     case "maliyet":    renderMaliyetRaporu(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
     case "excel":      renderExcel(); break;
@@ -1765,6 +1769,14 @@ function renderBakim() {
     <button class="btn btn-green" onclick="bakimKaydet()">+ Bakım Kaydı Ekle</button>
   </div>`;
 
+  html+=`<div style="height:20px"></div>`;
+  setContent(html);
+}
+
+function renderBakimListe() {
+  const bugun = new Date();
+  var html = "";
+
   if(DB.araclar.length>0) {
     html+=`<div class="card"><div class="section-title">Araç Bakım Durumu</div>`;
     DB.araclar.forEach(a=>{
@@ -1816,6 +1828,10 @@ function renderBakim() {
     html+=`</div>`;
   }
 
+  if(DB.araclar.length===0 && DB.bakimlar.length===0) {
+    html+=`<div class="empty"><div class="empty-icon">🔧</div>Henüz bakım kaydı yok.</div>`;
+  }
+
   html+=`<div style="height:20px"></div>`;
   setContent(html);
 }
@@ -1834,14 +1850,14 @@ async function bakimKaydet() {
     DB.bakimlar.unshift({...yeniBakim, id: data.id});
   } catch(e) { DB.bakimlar.unshift({...yeniBakim, id: Date.now()}); }
   showToast("Bakım kaydı eklendi!");
-  renderBakim();
+  if(AKTIF_TAB==="bakimliste") renderBakimListe(); else renderBakim();
 }
 
 async function bakimSil(id) {
   try { await bakimSilDB(id); } catch(e) {}
   DB.bakimlar=DB.bakimlar.filter(b=>b.id!==id);
   showToast("Silindi.");
-  renderBakim();
+  if(AKTIF_TAB==="bakim") renderBakim(); else renderBakimListe();
 }
 
 // ═══════════════════════════════════════════
@@ -3067,14 +3083,6 @@ async function maliyetExcel() {
 // NAKLİYE
 // ═══════════════════════════════════════════
 function renderNakliye() {
-  var filtreBas = window.NAKLIYE_BAS || "";
-  var filtreBit = window.NAKLIYE_BIT || "";
-  var nakliyeler = DB.nakliyeler;
-  if(filtreBas) nakliyeler = nakliyeler.filter(function(n){ return n.tarih>=filtreBas; });
-  if(filtreBit) nakliyeler = nakliyeler.filter(function(n){ return n.tarih<=filtreBit; });
-
-  var toplamTutar = nakliyeler.reduce(function(a,n){ return a+n.fiyat; }, 0);
-
   setContent(`
     <div class="card">
       <div class="section-title">YENİ NAKLİYE EKLE</div>
@@ -3098,7 +3106,20 @@ function renderNakliye() {
         <button class="btn btn-blue" onclick="nakliyeEkle()">+ Nakliye Ekle</button>
       </div>
     </div>
+    <div style="height:20px"></div>
+  `);
+}
 
+function renderNakliyeListe() {
+  var filtreBas = window.NAKLIYE_BAS || "";
+  var filtreBit = window.NAKLIYE_BIT || "";
+  var nakliyeler = DB.nakliyeler;
+  if(filtreBas) nakliyeler = nakliyeler.filter(function(n){ return n.tarih>=filtreBas; });
+  if(filtreBit) nakliyeler = nakliyeler.filter(function(n){ return n.tarih<=filtreBit; });
+
+  var toplamTutar = nakliyeler.reduce(function(a,n){ return a+n.fiyat; }, 0);
+
+  setContent(`
     <div class="card">
       <div class="section-title">FİLTRELE</div>
       <div class="row" style="margin-bottom:8px">
@@ -3146,13 +3167,13 @@ function renderNakliye() {
 function nakliyeTarihFiltre(tip, v) {
   if(tip==="bas") window.NAKLIYE_BAS=v;
   else window.NAKLIYE_BIT=v;
-  renderNakliye();
+  renderNakliyeListe();
 }
 
 function nakliyeHizliFiltre(gun) {
   if(gun===0) { window.NAKLIYE_BAS=""; window.NAKLIYE_BIT=""; }
   else { window.NAKLIYE_BIT=bugunTR(); window.NAKLIYE_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0]; }
-  renderNakliye();
+  renderNakliyeListe();
 }
 
 async function nakliyeEkle() {
@@ -3166,7 +3187,7 @@ async function nakliyeEkle() {
     const data = await nakliyelEkleDB(yeni);
     DB.nakliyeler.unshift({...yeni, id:data.id});
     showToast("Nakliye kaydı eklendi!");
-    renderNakliye();
+    if(AKTIF_TAB==="nakliyeliste") renderNakliyeListe(); else renderNakliye();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
 }
 
@@ -3174,7 +3195,7 @@ async function nakliyeSil(id) {
   try { await nakliyeSilDB(id); } catch(e) {}
   DB.nakliyeler = DB.nakliyeler.filter(function(n){ return n.id!==id; });
   showToast("Nakliye silindi.");
-  renderNakliye();
+  renderNakliyeListe();
 }
 
 // ═══════════════════════════════════════════
