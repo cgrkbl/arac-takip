@@ -1554,6 +1554,17 @@ async function kpiRaporExcel() {
   }
   R++;
 
+  // n veri sütununu KOL fiziksel sütuna dengeli dağıtır → her sütun için [c1,c2]
+  function sutunSinirlari(n){
+    var taban = Math.floor(KOL/n), artan = KOL%n;
+    var sonuc=[], cur=2;
+    for(var i=0;i<n;i++){
+      var gen = taban + (i<artan?1:0);
+      sonuc.push([cur, cur+gen-1]);
+      cur += gen;
+    }
+    return sonuc;
+  }
   function tabloBaslik(metin){
     ws.getRow(R).height=22; ws.mergeCells(R,2,R,2+KOL-1);
     var c=ws.getCell(R,2); c.value=metin;
@@ -1561,10 +1572,9 @@ async function kpiRaporExcel() {
   }
   function basliklar(arr){
     ws.getRow(R).height=20;
-    var span = Math.floor(KOL/arr.length); // her sütuna düşen fiziksel sütun
+    var sin = sutunSinirlari(arr.length);
     arr.forEach(function(h,i){
-      var c1 = 2 + i*span;
-      var c2 = (i===arr.length-1) ? (2+KOL-1) : (c1+span-1);
+      var c1=sin[i][0], c2=sin[i][1];
       if(c2>c1) ws.mergeCells(R,c1,R,c2);
       var c=ws.getCell(R,c1); c.value=h;
       c.font={name:"Arial",bold:true,size:10,color:{argb:BEYAZ}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
@@ -1574,10 +1584,9 @@ async function kpiRaporExcel() {
   }
   function satir(vals, idx, fmtMap, sariMi){
     ws.getRow(R).height=18;
-    var span = Math.floor(KOL/vals.length);
+    var sin = sutunSinirlari(vals.length);
     vals.forEach(function(val,i){
-      var c1 = 2 + i*span;
-      var c2 = (i===vals.length-1) ? (2+KOL-1) : (c1+span-1);
+      var c1=sin[i][0], c2=sin[i][1];
       if(c2>c1) ws.mergeCells(R,c1,R,c2);
       var c=ws.getCell(R,c1); c.value=val;
       if(sariMi){ c.font={name:"Arial",bold:true,size:10,color:{argb:KOYU}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; }
@@ -1587,6 +1596,33 @@ async function kpiRaporExcel() {
       if(fmtMap&&fmtMap[i]) c.numFmt=fmtMap[i];
     });
     R++;
+  }
+
+  // ── MALİYET DETAYLARI (yakıt / nakliye / bakım dökümü) ──
+  if(yakitlar.length>0){
+    tabloBaslik("YAKIT DETAYI");
+    basliklar(["Şoför","Plaka","Tarih","Tutar (TL)"]);
+    yakitlar.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(y,idx){
+      satir([y.sofor||"", y.plaka||"", y.tarih||"", y.tutar||0], idx, {3:"#,##0.00"});
+    });
+    ws.getRow(R).height=6; R++;
+  }
+  if(nakliyeler.length>0){
+    tabloBaslik("NAKLİYE DETAYI");
+    basliklar(["Sevk Adresi","Açıklama","Tarih","Tutar (TL)"]);
+    nakliyeler.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(n,idx){
+      satir([n.sevk_adresi||"", n.aciklama||"", n.tarih||"", n.fiyat||0], idx, {3:"#,##0.00"});
+    });
+    ws.getRow(R).height=6; R++;
+  }
+  var bakimMaliyetli = bakimlar.filter(function(b){return b.maliyet>0;});
+  if(bakimMaliyetli.length>0){
+    tabloBaslik("BAKIM DETAYI");
+    basliklar(["Plaka","Bakım Türü","Tarih","Tutar (TL)"]);
+    bakimMaliyetli.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(b,idx){
+      satir([b.plaka||"", b.tur||"", b.tarih||"", b.maliyet||0], idx, {3:"#,##0.00"});
+    });
+    ws.getRow(R).height=6; R++;
   }
 
   // ── Maliyet kırılımı tablosu ──
@@ -3811,7 +3847,6 @@ function renderMaliyetRaporu() {
       <div class="section-title">BAKIM DETAYI (${rapor.bakimlar.length} kayıt)</div>
       ${rapor.bakimlar.map(function(b){ return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #3a3a3c;font-size:12px"><div><div style="color:#f2f2f7">'+b.plaka+' — '+b.tur+'</div><div style="color:#636366">'+b.tarih+(b.not?' • '+b.not:'')+'</div></div><span style="color:#bf5af2;font-weight:700">'+b.maliyet.toLocaleString('tr-TR')+' TL</span></div>'; }).join('')}
     </div>`:""}
-    <button class="btn btn-green" style="margin-top:12px" onclick="maliyetExcel()">📥 Excel'e Aktar</button>
     <div style="height:20px"></div>
   `);
 }
