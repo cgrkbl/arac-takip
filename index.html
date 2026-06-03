@@ -1070,6 +1070,17 @@ function renderKPI() {
   };
 
   setContent(`
+    <div class="card" style="margin-bottom:12px">
+      <div class="section-title">DÖNEM</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="kpiMod('bugun')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="bugun"?"#7e57c2":"#3a3a3c"};color:${filtreMod==="bugun"?"#fff":"#aeaeb2"}">Bugün</button>
+        <button onclick="kpiMod('hafta')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="hafta"?"#7e57c2":"#3a3a3c"};color:${filtreMod==="hafta"?"#fff":"#aeaeb2"}">Bu Hafta</button>
+        <button onclick="kpiMod('ay')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="ay"?"#7e57c2":"#3a3a3c"};color:${filtreMod==="ay"?"#fff":"#aeaeb2"}">Bu Ay</button>
+        <button onclick="kpiMod('yil')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="yil"?"#7e57c2":"#3a3a3c"};color:${filtreMod==="yil"?"#fff":"#aeaeb2"}">Bu Yıl</button>
+        <button onclick="kpiMod('tumu')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="tumu"?"#7e57c2":"#3a3a3c"};color:${filtreMod==="tumu"?"#fff":"#aeaeb2"}">Tümü</button>
+      </div>
+    </div>
+
     <div class="card" style="background:linear-gradient(135deg,#4a2c7a,#2d1b4e);border:none;margin-bottom:12px;padding:0;overflow:hidden">
       <div style="background:linear-gradient(135deg,#5e35b1,#4527a0);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
         <div>
@@ -1164,17 +1175,6 @@ function renderKPI() {
         </div>
       </div>
       <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
-    </div>
-
-    <div class="card" style="margin-bottom:12px">
-      <div class="section-title">DÖNEM</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="kpiMod('bugun')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="bugun"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="bugun"?"#fff":"#aeaeb2"}">Bugün</button>
-        <button onclick="kpiMod('hafta')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="hafta"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="hafta"?"#fff":"#aeaeb2"}">Bu Hafta</button>
-        <button onclick="kpiMod('ay')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="ay"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="ay"?"#fff":"#aeaeb2"}">Bu Ay</button>
-        <button onclick="kpiMod('yil')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="yil"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="yil"?"#fff":"#aeaeb2"}">Bu Yıl</button>
-        <button onclick="kpiMod('tumu')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="tumu"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="tumu"?"#fff":"#aeaeb2"}">Tümü</button>
-      </div>
     </div>
 
     <div style="height:20px"></div>
