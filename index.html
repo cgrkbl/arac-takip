@@ -2052,10 +2052,33 @@ async function yakitRaporExcel() {
   var wb = new ExcelJS.Workbook();
   var ws = wb.addWorksheet("Yakıt Raporu", {views:[{showGridLines:false}]});
 
-  // Sütun genişlikleri: A boşluk, B-I veri
+  // Sütun genişlikleri: A boşluk, B-I veri — içeriğe göre otomatik hesapla
   ws.getColumn(1).width = 3;
-  var genis = [6, 13, 20, 14, 11, 14, 12, 18]; // No, Tarih, Şoför, Plaka, Litre, Tutar, TL/lt, Kaydeden
-  for(var i=0;i<genis.length;i++) ws.getColumn(i+2).width = genis[i];
+  // Her sütun için başlık + tüm değerlerin en uzununu bul
+  var basliklarG = ["No","Tarih","Şoför","Plaka","Litre","Tutar (TL)","TL/Litre","Kaydeden"];
+  function uzunluk(v){ return String(v==null?"":v).length; }
+  var kolonDeger = [
+    liste.map(function(y,i){ return i+1; }),
+    liste.map(function(y){ return trTarih(y.tarih)+(y.saat?" "+y.saat:""); }),
+    liste.map(function(y){ return y.sofor||""; }),
+    liste.map(function(y){ return y.plaka||""; }),
+    liste.map(function(y){ return (y.litre||0).toLocaleString("tr-TR"); }),
+    liste.map(function(y){ return (y.tutar||0).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}); }),
+    liste.map(function(y){ return ((y.tutar&&y.litre)?(y.tutar/y.litre):0).toFixed(2); }),
+    liste.map(function(y){ return y.kaydeden||""; })
+  ];
+  for(var ci=0; ci<basliklarG.length; ci++) {
+    var enUzun = uzunluk(basliklarG[ci]);
+    kolonDeger[ci].forEach(function(v){ var l=uzunluk(v); if(l>enUzun) enUzun=l; });
+    // B sütunu (ci=0) araç özet tablosunda "Plaka" da gösterdiği için plaka uzunluklarını da hesaba kat
+    if(ci===0) {
+      Object.keys(arac).forEach(function(p){ var l=uzunluk(p); if(l>enUzun) enUzun=l; });
+      var phB = uzunluk("ARAÇ BAZLI ÖZET");
+      // başlık merge edildiği için tek sütuna sığması gerekmez, sadece plaka önemli
+    }
+    // pay ekle (kenar boşluğu için +3), min 7, max 30
+    ws.getColumn(ci+2).width = Math.min(30, Math.max(7, enUzun+3));
+  }
 
   ws.getRow(1).height = 8;
 
