@@ -1836,13 +1836,11 @@ function renderKonumlar() {
         <button onclick="konumDuzenle('fabrika')" style="background:none;color:#0a84ff;font-size:18px;padding:0">✏️</button>
       </div>
       ${DB.konumlar.map(k=>{
-        const km = mesafe(DB.fabrika.lat,DB.fabrika.lng,k.lat,k.lng);
         return `<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid #48484a;margin-bottom:8px">
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${k.isim}</div>
             ${k.adres?`<div style="font-size:11px;color:#636366">${k.adres}</div>`:""}
           </div>
-          <span class="badge badge-blue">${km} km</span>
           <a href="https://www.google.com/maps?q=${k.lat},${k.lng}" target="_blank" style="font-size:18px;text-decoration:none">🗺️</a>
           <button onclick="konumDuzenle(${k.id})" style="background:none;color:#0a84ff;font-size:18px;padding:0">✏️</button>
           <button onclick="konumSil(${k.id})" style="background:none;color:#ff453a;font-size:18px;padding:0">🗑️</button>
