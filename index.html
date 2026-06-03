@@ -1168,109 +1168,14 @@ function renderKPI() {
 
     <div class="card" style="margin-bottom:12px">
       <div class="section-title">DÖNEM</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button onclick="kpiMod('bugun')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="bugun"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="bugun"?"#fff":"#aeaeb2"}">Bugün</button>
         <button onclick="kpiMod('hafta')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="hafta"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="hafta"?"#fff":"#aeaeb2"}">Bu Hafta</button>
         <button onclick="kpiMod('ay')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="ay"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="ay"?"#fff":"#aeaeb2"}">Bu Ay</button>
         <button onclick="kpiMod('yil')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="yil"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="yil"?"#fff":"#aeaeb2"}">Bu Yıl</button>
         <button onclick="kpiMod('tumu')" style="padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:${filtreMod==="tumu"?"#0a84ff":"#3a3a3c"};color:${filtreMod==="tumu"?"#fff":"#aeaeb2"}">Tümü</button>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span style="font-size:12px;color:#636366">Şoför:</span>
-        <select onchange="kpiFiltreGuncelle(this.value)" style="flex:1">
-          <option value="Tümü" ${filtreSofor==="Tümü"?"selected":""}>Tüm Şoförler</option>
-          ${DB.soforler.map(s=>`<option value="${s.isim}" ${filtreSofor===s.isim?"selected":""}>${s.isim}</option>`).join("")}
-        </select>
-      </div>
     </div>
-
-    <div class="kpi-grid">
-      <div class="kpi-card"><div class="kpi-icon">🛣️</div><div class="kpi-val" style="color:#0a84ff">${tKm.toLocaleString()}</div><div class="kpi-unit">km</div><div class="kpi-label">Toplam KM</div></div>
-      <div class="kpi-card"><div class="kpi-icon">🚛</div><div class="kpi-val" style="color:#30d158">${tSefer}</div><div class="kpi-unit">sefer</div><div class="kpi-label">Toplam Sefer</div></div>
-      <div class="kpi-card"><div class="kpi-icon">📦</div><div class="kpi-val" style="color:#ff9f0a">${tYuk.toLocaleString()}</div><div class="kpi-unit">yük</div><div class="kpi-label">Toplam Yük</div></div>
-      <div class="kpi-card"><div class="kpi-icon">⏱️</div><div class="kpi-val" style="color:#ff453a">${formatSure(tBek)}</div><div class="kpi-unit">süre</div><div class="kpi-label">Toplam Süre</div></div>
-    </div>
-
-    ${enCok?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="card" style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:22px">🏆</span>
-        <div><div style="font-size:9px;color:#636366;text-transform:uppercase">En Çok KM</div>
-        <div style="font-size:13px;font-weight:700;color:#ff9f0a">${enCok[0].split(" ")[0]}</div>
-        <div style="font-size:11px;color:#aeaeb2">${enCok[1].toLocaleString()} km</div></div>
-      </div>
-      ${enBek?`<div class="card" style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:22px">⏳</span>
-        <div><div style="font-size:9px;color:#636366;text-transform:uppercase">En Çok Bekleyen</div>
-        <div style="font-size:13px;font-weight:700;color:#ff453a">${enBek[0].split(" ")[0]}</div>
-        <div style="font-size:11px;color:#aeaeb2">${formatSure(enBek[1])}</div></div>
-      </div>`:""}
-    </div>`:""}
-
-    <div class="card">
-      <div class="section-title">Şoför Bazlı KM</div>
-      ${Object.keys(soforKm).length===0?'<div style="color:#636366;font-size:12px">Bu dönemde veri yok.</div>':""}
-      ${Object.entries(soforKm).sort((a,b)=>b[1]-a[1]).map(([s,km])=>`
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-            <span style="color:#aeaeb2">${s}</span><span style="color:#0a84ff;font-weight:600">${km.toLocaleString()} km</span>
-          </div>
-          <div class="bar-wrap"><div class="bar" style="width:${tKm>0?km/tKm*100:0}%;background:#0a84ff"></div></div>
-        </div>`).join("")}
-    </div>
-
-    <div class="card">
-      <div class="section-title">Şoför Bazlı Bekleme</div>
-      ${Object.keys(soforBek).length===0?'<div style="color:#636366;font-size:12px">Bu dönemde veri yok.</div>':""}
-      ${Object.entries(soforBek).sort((a,b)=>b[1]-a[1]).map(([s,dk])=>`
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-            <span style="color:#aeaeb2">${s}</span><span style="color:#ff9f0a;font-weight:600">${formatSure(dk)}</span>
-          </div>
-          <div class="bar-wrap"><div class="bar" style="width:${tBek>0?dk/tBek*100:0}%;background:#ff9f0a"></div></div>
-        </div>`).join("")}
-    </div>
-
-    ${Object.keys(aracKm).length>0?`<div class="card">
-      <div class="section-title">Araç Bazlı KM</div>
-      ${Object.entries(aracKm).sort((a,b)=>b[1]-a[1]).map(([p,km])=>`
-        <div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
-            <span style="color:#aeaeb2">🚗 ${p}</span><span style="color:#0a84ff;font-weight:600">${km.toLocaleString()} km</span>
-          </div>
-          <div class="bar-wrap"><div class="bar" style="width:${tKm>0?km/tKm*100:0}%;background:#0a84ff"></div></div>
-        </div>`).join("")}
-    </div>`:""}
-
-    ${tSefer>0&&Object.keys(soforKm).length>0?`
-    <div class="card">
-      <div class="section-title">Şoför KM Dağılımı</div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <canvas id="pie-km" width="140" height="140"></canvas>
-        <div id="pie-km-legend" style="flex:1;font-size:11px"></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-title">Bekleme Süresi Dağılımı</div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <canvas id="pie-bek" width="140" height="140"></canvas>
-        <div id="pie-bek-legend" style="flex:1;font-size:11px"></div>
-      </div>
-    </div>`:""}
-
-    ${yakitData.length>0?`
-    <div style="font-size:12px;font-weight:700;color:#30d158;text-transform:uppercase;letter-spacing:1px;margin:4px 0 10px">⛽ Yakıt Özeti</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="kpi-card"><div class="kpi-icon">⛽</div><div class="kpi-val" style="color:#30d158">${tLitre.toLocaleString()}</div><div class="kpi-unit">lt</div><div class="kpi-label">Toplam Litre</div></div>
-      <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a">${tTutar.toLocaleString()}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam Tutar</div></div>
-      <div class="kpi-card"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:#0a84ff">${tLitre>0?(tTutar/tLitre).toFixed(2):"-"}</div><div class="kpi-unit">TL/lt</div><div class="kpi-label">Ort. Fiyat</div></div>
-    </div>`:""}
-
-    ${nakData.length>0?`
-    <div style="font-size:12px;font-weight:700;color:#0a84ff;text-transform:uppercase;letter-spacing:1px;margin:4px 0 10px">🚚 Nakliye Özeti</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="kpi-card"><div class="kpi-icon">🚚</div><div class="kpi-val" style="color:#0a84ff">${nakData.length}</div><div class="kpi-unit">adet</div><div class="kpi-label">Toplam Nakliye</div></div>
-      <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a">${nakData.reduce((a,n)=>a+n.fiyat,0).toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam Maliyet</div></div>
-    </div>`:""}
 
     <div style="height:20px"></div>
   `);
