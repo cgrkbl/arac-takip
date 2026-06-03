@@ -1598,32 +1598,95 @@ async function kpiRaporExcel() {
     R++;
   }
 
-  // ── MALİYET DETAYLARI (yakıt / nakliye / bakım dökümü) ──
-  if(yakitlar.length>0){
-    tabloBaslik("YAKIT DETAYI");
-    basliklar(["Şoför","Plaka","Tarih","Tutar (TL)"]);
-    yakitlar.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(y,idx){
-      satir([y.sofor||"", y.plaka||"", y.tarih||"", y.tutar||0], idx, {3:"#,##0.00"});
+  // ═══ MALİYET RAPORU (orijinal görünüm, birebir) ═══
+  var malBakimlar = bakimlar.filter(function(b){ return b.maliyet>0; });
+  var mYakit = yakitlar.reduce(function(a,y){ return a+(y.tutar||0); },0);
+  var mNak = nakliyeler.reduce(function(a,n){ return a+(n.fiyat||0); },0);
+  var mBak = malBakimlar.reduce(function(a,b){ return a+(b.maliyet||0); },0);
+  var mTop = mYakit+mNak+mBak;
+  var malBas = bas || "Başlangıç", malBit = bit || "Bugün";
+
+  // Başlık (A-D birleşik, siyah zemin)
+  ws.mergeCells(R,2,R,5);
+  var mb = ws.getCell(R,2);
+  mb.value = malBas+" / "+malBit+" MALİYET RAPORU";
+  mb.font = {name:"Arial",bold:true,size:14,color:{argb:"FFFFFFFF"}};
+  mb.fill = {type:"pattern",pattern:"solid",fgColor:{argb:"FF1c1c1e"}};
+  mb.alignment = {horizontal:"center",vertical:"middle"};
+  mb.border = {top:{style:"medium"},bottom:{style:"medium"},left:{style:"medium"},right:{style:"medium"}};
+  ws.getRow(R).height = 32; R++;
+  ws.getRow(R).height = 8; R++;
+
+  // Özet satırları
+  var mOzet = [["⛽ Yakıt Toplamı",mYakit,false],["🚚 Nakliye Toplamı",mNak,false],["🔧 Bakım Toplamı",mBak,true],["💰 Genel Toplam",mTop,false]];
+  mOzet.forEach(function(o){
+    ws.getRow(R).height = 22;
+    var c1=ws.getCell(R,2); c1.value=o[0]; c1.font={name:"Arial",bold:true,size:12};
+    var c4=ws.getCell(R,5); c4.value=o[1]; c4.font={name:"Arial",bold:true,size:12};
+    c4.numFmt='#,##0.00 "TL"'; c4.alignment={horizontal:"right"};
+    c4.fill={type:"pattern",pattern:"solid",fgColor:{argb:o[2]?"FFFF9F0A":"FF2c2c2e"}};
+    if(o[2]) c1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF9F0A"}};
+    else c4.font={name:"Arial",bold:true,size:12,color:{argb:"FFFFFFFF"}};
+    R++;
+  });
+  ws.getRow(R).height=6; R++;
+
+  // Yakıt tablosu (yeşil başlık)
+  ws.getRow(R).height=22;
+  ["Şoför","Plaka","Tarih","Tutar (TL)"].forEach(function(h,i){
+    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF30d158"}}; c.alignment={horizontal:"center"};
+    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
+  });
+  R++;
+  yakitlar.forEach(function(y,i){
+    ws.getRow(R).height=20; var son=i===yakitlar.length-1;
+    [y.sofor||"",y.plaka||"",y.tarih||"",y.tutar||0].forEach(function(v,ci){
+      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
+      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
+      if(ci===3) c.numFmt='#,##0.00 "TL"';
     });
-    ws.getRow(R).height=6; R++;
-  }
-  if(nakliyeler.length>0){
-    tabloBaslik("NAKLİYE DETAYI");
-    basliklar(["Sevk Adresi","Açıklama","Tarih","Tutar (TL)"]);
-    nakliyeler.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(n,idx){
-      satir([n.sevk_adresi||"", n.aciklama||"", n.tarih||"", n.fiyat||0], idx, {3:"#,##0.00"});
+    R++;
+  });
+  ws.getRow(R).height=8; R++;
+
+  // Nakliye tablosu (mavi başlık)
+  ws.getRow(R).height=22;
+  ["Sevk Adresi","Açıklama","Tarih","Tutar (TL)"].forEach(function(h,i){
+    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0a84ff"}}; c.alignment={horizontal:"center"};
+    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
+  });
+  R++;
+  nakliyeler.forEach(function(n,i){
+    ws.getRow(R).height=20; var son=i===nakliyeler.length-1;
+    [n.sevk_adresi||"",n.aciklama||"",n.tarih||"",n.fiyat||0].forEach(function(v,ci){
+      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
+      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
+      if(ci===3) c.numFmt='#,##0.00 "TL"';
     });
-    ws.getRow(R).height=6; R++;
-  }
-  var bakimMaliyetli = bakimlar.filter(function(b){return b.maliyet>0;});
-  if(bakimMaliyetli.length>0){
-    tabloBaslik("BAKIM DETAYI");
-    basliklar(["Plaka","Bakım Türü","Tarih","Tutar (TL)"]);
-    bakimMaliyetli.slice().sort(function(a,b){return (a.tarih||"").localeCompare(b.tarih||"");}).forEach(function(b,idx){
-      satir([b.plaka||"", b.tur||"", b.tarih||"", b.maliyet||0], idx, {3:"#,##0.00"});
+    R++;
+  });
+  ws.getRow(R).height=8; R++;
+
+  // Bakım tablosu (mor başlık)
+  ws.getRow(R).height=22;
+  ["Plaka","Bakım Türü","Tarih","Tutar (TL)"].forEach(function(h,i){
+    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
+    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFbf5af2"}}; c.alignment={horizontal:"center"};
+    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
+  });
+  R++;
+  malBakimlar.forEach(function(b,i){
+    ws.getRow(R).height=20; var son=i===malBakimlar.length-1;
+    [b.plaka||"",b.tur||"",b.tarih||"",b.maliyet||0].forEach(function(v,ci){
+      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
+      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
+      if(ci===3) c.numFmt='#,##0.00 "TL"';
     });
-    ws.getRow(R).height=6; R++;
-  }
+    R++;
+  });
+  ws.getRow(R).height=10; R++;
 
   // ── Maliyet kırılımı tablosu ──
   var malTabloRow = R; // başlık satırı
