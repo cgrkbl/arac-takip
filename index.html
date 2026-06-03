@@ -1656,20 +1656,28 @@ async function kpiRaporExcel() {
   }
   function basliklar(arr){
     ws.getRow(R).height=20;
+    var span = Math.floor(KOL/arr.length); // her sütuna düşen fiziksel sütun
     arr.forEach(function(h,i){
-      var c=ws.getCell(R,i+2); c.value=h;
+      var c1 = 2 + i*span;
+      var c2 = (i===arr.length-1) ? (2+KOL-1) : (c1+span-1);
+      if(c2>c1) ws.mergeCells(R,c1,R,c2);
+      var c=ws.getCell(R,c1); c.value=h;
       c.font={name:"Arial",bold:true,size:10,color:{argb:BEYAZ}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
       c.alignment={horizontal:"center",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
     });
     R++;
   }
-  function satir(vals, idx, fmtMap){
+  function satir(vals, idx, fmtMap, sariMi){
     ws.getRow(R).height=18;
+    var span = Math.floor(KOL/vals.length);
     vals.forEach(function(val,i){
-      var c=ws.getCell(R,i+2); c.value=val;
-      c.font={name:"Arial",size:10,color:{argb:"FF222222"}};
+      var c1 = 2 + i*span;
+      var c2 = (i===vals.length-1) ? (2+KOL-1) : (c1+span-1);
+      if(c2>c1) ws.mergeCells(R,c1,R,c2);
+      var c=ws.getCell(R,c1); c.value=val;
+      if(sariMi){ c.font={name:"Arial",bold:true,size:10,color:{argb:KOYU}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; }
+      else { c.font={name:"Arial",size:10,color:{argb:"FF222222"}}; if(idx%2===1) c.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}}; }
       c.alignment={horizontal:i===0?"left":"center",vertical:"middle"};
-      if(idx%2===1) c.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}};
       c.border={top:ince,bottom:ince,left:ince,right:ince};
       if(fmtMap&&fmtMap[i]) c.numFmt=fmtMap[i];
     });
@@ -1685,17 +1693,7 @@ async function kpiRaporExcel() {
     var oran = toplamMaliyet>0?Math.round(m[1]/toplamMaliyet*100)+"%":"0%";
     satir([m[0], m[1], oran], idx, {1:"#,##0.00"});
   });
-  satir(["TOPLAM", toplamMaliyet, "100%"], 0, {1:"#,##0.00"});
-  for(var cc=2;cc<=4;cc++){ var tc=ws.getCell(R-1,cc); tc.font={name:"Arial",bold:true,size:10,color:{argb:KOYU}}; tc.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; }
-  // Donut grafik (tablonun sağına, F sütunundan itibaren)
-  if(toplamMaliyet>0){
-    try {
-      var mVeri=[{etiket:"Yakıt",deger:yakitTutar},{etiket:"Nakliye",deger:nakTutar},{etiket:"Bakım",deger:bakTutar}].filter(function(x){return x.deger>0;});
-      var dPng=donutPNG(mVeri,["#7e57c2","#26a69a","#ab47bc"]);
-      var dImg=wb.addImage({base64:dPng,extension:"png"});
-      ws.addImage(dImg,{tl:{col:5,row:malTabloRow},ext:{width:220,height:200}});
-    } catch(e){ console.error("Donut PNG hatası:",e); }
-  }
+  satir(["TOPLAM", toplamMaliyet, "100%"], 0, {1:"#,##0.00"}, true);
   ws.getRow(R).height=6; R++;
 
   // ── Araç bazlı KM ──
@@ -1730,21 +1728,10 @@ async function kpiRaporExcel() {
   kmSeri.forEach(function(m,idx){
     satir([m.label, m.deger, malSeri[idx]?malSeri[idx].deger:0], idx, {1:"#,##0",2:"#,##0"});
   });
-  // Aylık maliyet sütun grafiği (tablonun sağına)
-  try {
-    var bPng=barPNG(malSeri,"#26a69a");
-    var bImg=wb.addImage({base64:bPng,extension:"png"});
-    ws.addImage(bImg,{tl:{col:5,row:trendTabloRow},ext:{width:360,height:200}});
-  } catch(e){ console.error("Bar PNG hatası:",e); }
 
-  // ── Otomatik sütun genişliği (içeriğe göre) ──
+  // ── Sütunları eşit ve dengeli genişlikte yap (tam genişlik, sağda boşluk yok) ──
   for(var col=2; col<=2+KOL-1; col++){
-    var enUz=8;
-    ws.getColumn(col).eachCell({includeEmpty:false}, function(cell){
-      var l=String(cell.value==null?"":cell.value).length;
-      if(l>enUz) enUz=l;
-    });
-    ws.getColumn(col).width = Math.min(34, Math.max(12, enUz+3));
+    ws.getColumn(col).width = 17;
   }
 
   try {
