@@ -73,6 +73,7 @@ textarea{resize:vertical;}
 .nav-btn span:first-child{font-size:20px;}
 .nav-badge{position:absolute;top:6px;right:25%;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 #content{padding:16px;max-width:680px;margin:0 auto;padding-bottom:90px;}
+#content.kpi-genis{max-width:1200px;}
 
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
@@ -125,10 +126,22 @@ textarea{resize:vertical;}
 .dash-grid { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-panels { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-kpi-kolon { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+.dash-sol { display:flex; flex-direction:column; gap:12px; }
+.dash-row3 { display:grid; grid-template-columns:1fr; gap:12px; }
+.dash-row2 { display:grid; grid-template-columns:1fr; gap:12px; }
+.dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; }
+.dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
+.dash-panel-bos { height:120px; display:flex; align-items:center; justify-content:center; color:#5a6f8f; font-size:12px; border:1px dashed #5a4b7a; border-radius:10px; }
+.dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
+.dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
+.dash-kpi-val { font-size:24px; font-weight:800; line-height:1; }
+.dash-kpi-filtre { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
 @media (min-width:720px) {
-  .dash-grid { grid-template-columns:2fr 1fr; }
+  .dash-grid { grid-template-columns:3fr 1fr; }
   .dash-panels { grid-template-columns:1fr 1fr; }
   .dash-kpi-kolon { grid-template-columns:1fr; }
+  .dash-row3 { grid-template-columns:1fr 1fr 1fr; }
+  .dash-row2 { grid-template-columns:1fr 1fr; }
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
@@ -374,7 +387,9 @@ function showToast(msg, type="success") {
 }
 
 function setContent(html) {
-  document.getElementById("content").innerHTML = html;
+  var c = document.getElementById("content");
+  c.classList.remove("kpi-genis");
+  c.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════
@@ -984,6 +999,24 @@ async function donusKaydet(id) {
 // ═══════════════════════════════════════════
 // KPI
 // ═══════════════════════════════════════════
+// Bir dönem modunu {bas,bit} tarih aralığına çevirir
+function donemAralik(mod) {
+  var bugun = bugunTR();
+  if(mod==="bugun") return {bas:bugun, bit:bugun};
+  if(mod==="hafta") return {bas:new Date(Date.now()-7*86400000).toISOString().split("T")[0], bit:bugun};
+  if(mod==="ay") { var s=new Date(); return {bas:s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-01", bit:bugun}; }
+  if(mod==="yil") return {bas:new Date().getFullYear()+"-01-01", bit:bugun};
+  return {bas:"", bit:""}; // tumu
+}
+
+// Belirli dönemde toplam sefer sayısı
+function kutuSeferSayisi(mod) {
+  var a = donemAralik(mod);
+  var data = DB.tamamlananlar || [];
+  if(a.bas) data = data.filter(function(s){ return s.tarih>=a.bas && s.tarih<=a.bit; });
+  return data.length;
+}
+
 function renderKPI() {
   var filtreMod = window.KPI_MOD || "bugun";
   var filtreSofor = window.KPI_SOFOR || "Tümü";
@@ -1107,187 +1140,61 @@ function renderKPI() {
       </div>
     </div>
 
-    <div class="card" style="background:linear-gradient(135deg,#1a2744,#0f1828);border:1px solid #2a3f5f;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px">📋 EK GÖSTERGELER</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
-          <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
-          <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px">${nakliyeMaliyet.toLocaleString("tr-TR")}</div>
-          <div style="font-size:10px;color:#8fa3c4">TL</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">ARAÇ PLAN<br>GERÇEKLEŞEN UYUM</div>
-          <div style="font-size:24px;font-weight:800;color:#fff;margin-top:2px">${planUyum!==""?planUyum+"%":"—"}</div>
-          <div style="font-size:10px;color:#8fa3c4">${isKararli>0?isTamam+"/"+isKararli+" iş":"iş listesinden"}</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">SEVKİYAT<br>MİKTARI</div>
-          <div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">${sevkiyatSeferSayisi}</div>
-          <div style="font-size:10px;color:#8fa3c4">sefer • ${sevkiyatYukMiktari.toLocaleString("tr-TR")} yük</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">İŞ KAZASI<br>MİKTARI</div>
-          <input type="number" inputmode="numeric" class="kpi-input" min="0" max="9999" value="${dash.isKazasi}" placeholder="—" oninput="if(this.value>9999)this.value=9999;kpiInputBoyut(this);" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:${(String(dash.isKazasi).length||1)+0.5}ch;min-width:1ch;max-width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
-          <div style="font-size:10px;color:#8fa3c4;margin-top:2px">adet</div>
-        </div>
-      </div>
-      <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
 
-      <div style="margin-top:14px;border-top:1px solid #2a3f5f;padding-top:12px">
-        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px">🛣️ AYLIK KM BAŞI MALİYET (GENEL)</div>
-        <div style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;font-size:12px">
-            <thead>
-              <tr style="background:#15233d">
-                <th style="padding:7px 8px;text-align:left;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Ay</th>
-                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Litre</th>
-                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">KM</th>
-                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">TL/km</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${aylikKmMaliyet(6).slice().reverse().map(function(m){
-                return `<tr>
-                  <td style="padding:7px 8px;text-align:left;color:#f2f2f7;font-weight:600;border:1px solid #2a3f5f">${m.ay} ${m.yil}</td>
-                  <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.litre.toLocaleString("tr-TR")}</td>
-                  <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.km.toLocaleString("tr-TR")}</td>
-                  <td style="padding:7px 8px;text-align:center;font-weight:800;color:${m.maliyet!==null?"#30d158":"#5a6f8f"};border:1px solid #2a3f5f">${m.maliyet!==null?m.maliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</td>
-                </tr>`;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-        <div style="font-size:10px;color:#5a6f8f;margin-top:6px">Hesap: (aylık alınan litre × güncel fiyat) ÷ aylık km</div>
-      </div>
-
-      ${(DB.araclar||[]).map(function(arac){
-        var veri = aracAylikKmMaliyet(arac.plaka, 6).slice().reverse();
-        // Hiç verisi olmayan aracı atla
-        var varMi = veri.some(function(m){ return m.litre>0 || m.km>0; });
-        if(!varMi) return "";
-        return `<div style="margin-top:12px;border-top:1px solid #2a3f5f;padding-top:12px">
-          <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px">🚗 ${arac.plaka}</div>
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:12px">
-              <thead>
-                <tr style="background:#15233d">
-                  <th style="padding:7px 8px;text-align:left;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Ay</th>
-                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Litre</th>
-                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">KM</th>
-                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">TL/km</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${veri.map(function(m){
-                  return `<tr>
-                    <td style="padding:7px 8px;text-align:left;color:#f2f2f7;font-weight:600;border:1px solid #2a3f5f">${m.ay} ${m.yil}</td>
-                    <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.litre.toLocaleString("tr-TR")}</td>
-                    <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.km.toLocaleString("tr-TR")}</td>
-                    <td style="padding:7px 8px;text-align:center;font-weight:800;color:${m.maliyet!==null?"#30d158":"#5a6f8f"};border:1px solid #2a3f5f">${m.maliyet!==null?m.maliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</td>
-                  </tr>`;
-                }).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>`;
-      }).join("")}
-    </div>
-
-    <div class="card" style="background:linear-gradient(135deg,#4a2c7a,#2d1b4e);border:none;margin-bottom:12px;padding:0;overflow:hidden">
-      <div style="background:linear-gradient(135deg,#5e35b1,#4527a0);padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+    <div class="card" style="background:#2d1b4e;border:none;margin-bottom:12px;padding:0;overflow:hidden">
+      <div style="background:#4527a0;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px">🚛</div>
           <div>
-            <div style="font-size:17px;font-weight:800;color:#fff;line-height:1.1">KÜÇÜKER LOJİSTİK</div>
-            <div style="font-size:11px;color:#d1c4e9;font-weight:600">Performans Panosu</div>
+            <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.1">KÜÇÜKER LOJİSTİK</div>
+            <div style="font-size:11px;color:#d1c4e9;font-weight:600">KPI Raporu</div>
           </div>
         </div>
-        <button onclick="kpiRaporExcel()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer">⬇️ Excel</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="kpiRaporExcel()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer">⬇️ Excel</button>
+        </div>
       </div>
+
       <div style="padding:14px">
         <div class="dash-grid">
 
           <div class="dash-sol">
-            <div class="dash-panels">
-              ${Object.keys(aracKm).length>0?`
-              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
-                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">🚗 Araç KM Dağılımı</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <canvas id="dash-arac-pie" width="110" height="110"></canvas>
-                  <div id="dash-arac-pie-legend" style="flex:1;font-size:11px"></div>
-                </div>
-              </div>`:""}
-              ${(tTutar+nakliyeMaliyet+bakimMaliyet)>0?`
-              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
-                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">💰 Maliyet Kırılımı</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <canvas id="dash-maliyet-pie" width="110" height="110"></canvas>
-                  <div id="dash-maliyet-pie-legend" style="flex:1;font-size:11px"></div>
-                </div>
-              </div>`:""}
-              ${Object.keys(yukKat).length>0?`
-              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
-                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">📦 Yük Kategorisi</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <canvas id="dash-yuk-pie" width="110" height="110"></canvas>
-                  <div id="dash-yuk-pie-legend" style="flex:1;font-size:11px"></div>
-                </div>
-              </div>`:""}
-              ${isDurumVeri.length>0?`
-              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
-                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">✅ İş Durumu</div>
-                <div style="display:flex;align-items:center;gap:12px">
-                  <canvas id="dash-is-pie" width="110" height="110"></canvas>
-                  <div id="dash-is-pie-legend" style="flex:1;font-size:11px"></div>
-                </div>
-              </div>`:""}
+            <!-- ÜST SATIR: 3 panel -->
+            <div class="dash-row3">
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 1</div><div class="dash-panel-bos">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 2</div><div class="dash-panel-bos">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 3</div><div class="dash-panel-bos">boş</div></div>
             </div>
-
-            ${Object.keys(soforKm).length>0?`
-            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
-              <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:6px">👤 Şoför Bazında KM</div>
-              <canvas id="dash-sofor-bar" width="320" height="${Math.max(80, Object.keys(soforKm).length*32)}" style="width:100%;height:auto"></canvas>
-            </div>`:""}
-
-            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
-              <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:6px">📈 Aylık KM Trendi (Son 6 Ay)</div>
-              <canvas id="dash-km-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
+            <!-- ORTA SATIR: 2 geniş panel -->
+            <div class="dash-row2">
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 4</div><div class="dash-panel-bos" style="height:130px">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 5</div><div class="dash-panel-bos" style="height:130px">boş</div></div>
             </div>
-
-            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
-              <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:6px">💸 Aylık Maliyet Trendi (Son 6 Ay)</div>
-              <canvas id="dash-maliyet-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
-            </div>
-
-            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
-              <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:6px">🚛 Aylık Sefer Sayısı (Son 6 Ay)</div>
-              <canvas id="dash-sefer-bar" width="320" height="120" style="width:100%;height:auto"></canvas>
+            <!-- ALT SATIR: 3 panel -->
+            <div class="dash-row3">
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 6</div><div class="dash-panel-bos">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 7</div><div class="dash-panel-bos">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">PANEL 8</div><div class="dash-panel-bos">boş</div></div>
             </div>
           </div>
 
           <div class="dash-kpi-kolon">
-            <div style="background:linear-gradient(135deg,#26a69a,#00897b);border-radius:14px;padding:16px;color:#fff">
-              <div style="font-size:24px;font-weight:800;line-height:1">${tSefer}</div>
-              <div style="font-size:12px;opacity:0.9;margin-top:4px">🚛 Toplam Sefer</div>
+            <div class="dash-kpi-kart" style="background:#26a69a">
+              <div class="dash-kpi-no">🚛 TOPLAM SEFER</div>
+              <div class="dash-kpi-val">${kutuSeferSayisi(window.KPI_KUTU1_MOD||filtreMod)}</div>
+              <div class="dash-kpi-filtre">
+                ${["bugun","hafta","ay","yil","tumu"].map(function(m){
+                  var ad = m==="bugun"?"Bugün":m==="hafta"?"Hafta":m==="ay"?"Ay":m==="yil"?"Yıl":"Tümü";
+                  var aktif = (window.KPI_KUTU1_MOD||filtreMod)===m;
+                  return '<button onclick="kutu1Mod(&quot;'+m+'&quot;)" style="padding:3px 7px;border-radius:6px;border:none;cursor:pointer;font-size:9px;font-weight:600;background:'+(aktif?"rgba(255,255,255,0.35)":"rgba(255,255,255,0.12)")+';color:#fff">'+ad+'</button>';
+                }).join("")}
+              </div>
             </div>
-            <div style="background:linear-gradient(135deg,#7e57c2,#5e35b1);border-radius:14px;padding:16px;color:#fff">
-              <div style="font-size:24px;font-weight:800;line-height:1">${tKm.toLocaleString("tr-TR")}</div>
-              <div style="font-size:12px;opacity:0.9;margin-top:4px">🛣️ Toplam KM</div>
-            </div>
-            <div style="background:linear-gradient(135deg,#42a5f5,#1e88e5);border-radius:14px;padding:16px;color:#fff">
-              <div style="font-size:24px;font-weight:800;line-height:1">${tYuk.toLocaleString("tr-TR")}</div>
-              <div style="font-size:12px;opacity:0.9;margin-top:4px">📦 Toplam Yük</div>
-            </div>
-            <div style="background:linear-gradient(135deg,#ab47bc,#8e24aa);border-radius:14px;padding:16px;color:#fff">
-              <div style="font-size:20px;font-weight:800;line-height:1">${(tTutar+nakliyeMaliyet+bakimMaliyet).toLocaleString("tr-TR")} <span style="font-size:12px">TL</span></div>
-              <div style="font-size:12px;opacity:0.9;margin-top:4px">💰 Toplam Maliyet</div>
-            </div>
+            <div class="dash-kpi-kart" style="background:#4dd0e1"><div class="dash-kpi-no">KPI 2</div><div class="dash-kpi-val">—</div></div>
+            <div class="dash-kpi-kart" style="background:#42a5f5"><div class="dash-kpi-no">KPI 3</div><div class="dash-kpi-val">—</div></div>
+            <div class="dash-kpi-kart" style="background:#7e57c2"><div class="dash-kpi-no">KPI 4</div><div class="dash-kpi-val">—</div></div>
+            <div class="dash-kpi-kart" style="background:#5e35b1"><div class="dash-kpi-no">KPI 5</div><div class="dash-kpi-val">—</div></div>
+            <div class="dash-kpi-kart" style="background:#ab47bc"><div class="dash-kpi-no">KPI 6</div><div class="dash-kpi-val">—</div></div>
           </div>
 
         </div>
@@ -1297,6 +1204,7 @@ function renderKPI() {
 
     <div style="height:20px"></div>
   `);
+  document.getElementById("content").classList.add("kpi-genis");
   setTimeout(()=>kpiGrafikleriCiz(soforKm, soforBek, tKm, tBek), 150);
   // Yeni mor-turkuaz dashboard grafikleri
   setTimeout(function(){
@@ -1346,6 +1254,7 @@ function renderKPI() {
 }
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
+function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
 
 async function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
