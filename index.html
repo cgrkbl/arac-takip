@@ -671,8 +671,8 @@ function renderCikis(soforAdi) {
   CIKIS_SEL={lat:null,lng:null,id:null};
   VARIS_SEL={lat:null,lng:null,id:null,isim:""};
   const sf = soforAdi || (KUL.rol==="sofor" ? KUL.isim : "");
-  const konumOpts = tumKonumlar().map(k=>
-    `<option value="${k.id}">${k.id==="fabrika"?"🏭 ":"📍 "}${k.isim}</option>`
+  const konumOpts = tumKonumlar().map((k,i)=>
+    `<option value="${i}">${k.id==="fabrika"?"🏭 ":"📍 "}${k.isim}</option>`
   ).join("");
 
   setContent(`
@@ -771,8 +771,8 @@ let CIKIS_SEL = {lat:null,lng:null,id:null};
 let VARIS_SEL = {lat:null,lng:null,id:null,isim:""};
 
 function cikisSecildi() {
-  const id = document.getElementById("f-cikis").value;
-  const k = tumKonumlar().find(x=>String(x.id)===String(id));
+  const idx = document.getElementById("f-cikis").value;
+  const k = idx==="" ? null : tumKonumlar()[parseInt(idx)];
   if(!k) { CIKIS_SEL={lat:null,lng:null,id:null}; return; }
   CIKIS_SEL = {lat:k.lat,lng:k.lng,id:k.id,isim:k.isim};
   const link = document.getElementById("cikis-harita-link");
@@ -782,8 +782,8 @@ function cikisSecildi() {
 }
 
 function varisSecildi() {
-  const id = document.getElementById("f-varis").value;
-  const k = tumKonumlar().find(x=>String(x.id)===String(id));
+  const idx = document.getElementById("f-varis").value;
+  const k = idx==="" ? null : tumKonumlar()[parseInt(idx)];
   const el = document.getElementById("varis-detay");
   if(!k) { VARIS_SEL={lat:null,lng:null,id:null,isim:""}; el.style.display="none"; return; }
   VARIS_SEL = {lat:k.lat,lng:k.lng,id:k.id,isim:k.isim};
@@ -841,15 +841,15 @@ async function cikisKaydet(soforAdi) {
   }
   if(DB.aktifSeferler.find(s=>s.sofor===sofor)) { showToast(sofor+" zaten yolda!","error"); return; }
 
-  const cikisK = tumKonumlar().find(x=>String(x.id)===String(cikisId));
-  const varisK = tumKonumlar().find(x=>String(x.id)===String(varisId));
+  const cikisK = cikisId==="" ? null : tumKonumlar()[parseInt(cikisId)];
+  const varisK = varisId==="" ? null : tumKonumlar()[parseInt(varisId)];
   const km_mesafe = cikisK&&varisK ? mesafe(cikisK.lat,cikisK.lng,varisK.lat,varisK.lng) : null;
   const simdi = new Date();
 
   const yeniSefer = {
     sofor, tarih, plaka,
-    cikis_id: cikisId, cikis_isim: cikisK?.isim||"", cikis_lat: cikisK?.lat, cikis_lng: cikisK?.lng,
-    varis_id: varisId, varis_isim: varisK?.isim||"", varis_lat: varisK?.lat, varis_lng: varisK?.lng,
+    cikis_id: cikisK?.id, cikis_isim: cikisK?.isim||"", cikis_lat: cikisK?.lat, cikis_lng: cikisK?.lng,
+    varis_id: varisK?.id, varis_isim: varisK?.isim||"", varis_lat: varisK?.lat, varis_lng: varisK?.lng,
     mesafe: km_mesafe, baslangic_km: parseInt(km),
     yuk_turu: yuk, yuk_miktari: miktar, yuk_birimi: birim, aciklama,
     cikis_timestamp: simdi.getTime(),
