@@ -122,6 +122,14 @@ textarea{resize:vertical;}
 .durum-item{background:#1c1c1e;border-radius:8px;padding:8px 10px;}
 .durum-tur{font-size:10px;color:#636366;text-transform:uppercase;letter-spacing:.8px;}
 .durum-val{font-size:12px;font-weight:600;margin-top:2px;}
+.dash-grid { display:grid; grid-template-columns:1fr; gap:12px; }
+.dash-panels { display:grid; grid-template-columns:1fr; gap:12px; }
+.dash-kpi-kolon { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+@media (min-width:720px) {
+  .dash-grid { grid-template-columns:2fr 1fr; }
+  .dash-panels { grid-template-columns:1fr 1fr; }
+  .dash-kpi-kolon { grid-template-columns:1fr; }
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -1042,7 +1050,14 @@ function renderKPI() {
   var sevkiyatSeferSayisi = tSefer;
   var sevkiyatYukMiktari = tYuk;
   // KM Birim Maliyet: dönemdeki yakıt tutarı / toplam km (TL/km)
-  var kmBirimMaliyet = tKm>0 ? (tTutar/tKm) : null;
+  // KM Birim Maliyet: her aracın (tüketim/100 × güncel litre fiyatı) değerinin basit ortalaması
+  var lf = parseFloat(DB.litreFiyati)||0;
+  var tukAraclar = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; });
+  var kmBirimMaliyet = null;
+  if(lf>0 && tukAraclar.length>0) {
+    var toplamBirim = tukAraclar.reduce(function(s,a){ return s + (parseFloat(a.tuketim)/100*lf); }, 0);
+    kmBirimMaliyet = toplamBirim / tukAraclar.length;
+  }
   // Plan Gerçekleşen Uyum: seçili dönemdeki işlerden otomatik (tamamlanan / kararlı işler)
   var isData = DB.isler || [];
   if(bas) isData = isData.filter(i=>i.tarih>=bas&&i.tarih<=bit);
@@ -1050,6 +1065,20 @@ function renderKPI() {
   var isOlmadi = isData.filter(i=>i.durum==="Tamamlanamadı").length;
   var isKararli = isTamam + isOlmadi;
   var planUyum = isKararli>0 ? Math.round(isTamam/isKararli*100) : "";
+  // ── Yeni dashboard grafikleri için veriler ──
+  // Yük kategorisi dağılımı (sefer yük türüne göre)
+  var yukKat = {};
+  data.forEach(function(s){
+    var k = s.yuk_turu || "Diğer";
+    yukKat[k] = (yukKat[k]||0) + (parseFloat(s.yuk_miktari)||0);
+  });
+  // İş durumu dağılımı
+  var isBekleyen = isData.filter(function(i){ return !i.durum || i.durum==="Bekliyor"; }).length;
+  var isDurumVeri = [
+    {etiket:"Tamamlandı", deger:isTamam},
+    {etiket:"Tamamlanamadı", deger:isOlmadi},
+    {etiket:"Bekliyor", deger:isBekleyen}
+  ].filter(function(x){ return x.deger>0; });
   // Elle girilen KPI'lar (oturum boyunca saklanır)
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
   var dash = window.KPI_DASH;
@@ -1087,11 +1116,6 @@ function renderKPI() {
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
           <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
         </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">KM BİRİM<br>MALİYET</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;margin-top:4px">${kmBirimMaliyet!==null?kmBirimMaliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</div>
-          <div style="font-size:10px;color:#8fa3c4">TL/km</div>
-        </div>
         <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
           <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
           <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px">${nakliyeMaliyet.toLocaleString("tr-TR")}</div>
@@ -1114,63 +1138,159 @@ function renderKPI() {
         </div>
       </div>
       <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
+
+      <div style="margin-top:14px;border-top:1px solid #2a3f5f;padding-top:12px">
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px">🛣️ AYLIK KM BAŞI MALİYET (GENEL)</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:#15233d">
+                <th style="padding:7px 8px;text-align:left;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Ay</th>
+                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Litre</th>
+                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">KM</th>
+                <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">TL/km</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${aylikKmMaliyet(6).slice().reverse().map(function(m){
+                return `<tr>
+                  <td style="padding:7px 8px;text-align:left;color:#f2f2f7;font-weight:600;border:1px solid #2a3f5f">${m.ay} ${m.yil}</td>
+                  <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.litre.toLocaleString("tr-TR")}</td>
+                  <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.km.toLocaleString("tr-TR")}</td>
+                  <td style="padding:7px 8px;text-align:center;font-weight:800;color:${m.maliyet!==null?"#30d158":"#5a6f8f"};border:1px solid #2a3f5f">${m.maliyet!==null?m.maliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:10px;color:#5a6f8f;margin-top:6px">Hesap: (aylık alınan litre × güncel fiyat) ÷ aylık km</div>
+      </div>
+
+      ${(DB.araclar||[]).map(function(arac){
+        var veri = aracAylikKmMaliyet(arac.plaka, 6).slice().reverse();
+        // Hiç verisi olmayan aracı atla
+        var varMi = veri.some(function(m){ return m.litre>0 || m.km>0; });
+        if(!varMi) return "";
+        return `<div style="margin-top:12px;border-top:1px solid #2a3f5f;padding-top:12px">
+          <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:8px">🚗 ${arac.plaka}</div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead>
+                <tr style="background:#15233d">
+                  <th style="padding:7px 8px;text-align:left;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Ay</th>
+                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">Litre</th>
+                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">KM</th>
+                  <th style="padding:7px 8px;text-align:center;color:#8fa3c4;font-weight:700;border:1px solid #2a3f5f">TL/km</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${veri.map(function(m){
+                  return `<tr>
+                    <td style="padding:7px 8px;text-align:left;color:#f2f2f7;font-weight:600;border:1px solid #2a3f5f">${m.ay} ${m.yil}</td>
+                    <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.litre.toLocaleString("tr-TR")}</td>
+                    <td style="padding:7px 8px;text-align:center;color:#aeaeb2;border:1px solid #2a3f5f">${m.km.toLocaleString("tr-TR")}</td>
+                    <td style="padding:7px 8px;text-align:center;font-weight:800;color:${m.maliyet!==null?"#30d158":"#5a6f8f"};border:1px solid #2a3f5f">${m.maliyet!==null?m.maliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      }).join("")}
     </div>
 
     <div class="card" style="background:linear-gradient(135deg,#4a2c7a,#2d1b4e);border:none;margin-bottom:12px;padding:0;overflow:hidden">
-      <div style="background:linear-gradient(135deg,#5e35b1,#4527a0);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:16px;font-weight:800;color:#fff;letter-spacing:0.5px">📊 KÜÇÜKER LOJİSTİK</div>
-          <div style="font-size:11px;color:#d1c4e9;font-weight:600">Performans Panosu</div>
+      <div style="background:linear-gradient(135deg,#5e35b1,#4527a0);padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px">🚛</div>
+          <div>
+            <div style="font-size:17px;font-weight:800;color:#fff;line-height:1.1">KÜÇÜKER LOJİSTİK</div>
+            <div style="font-size:11px;color:#d1c4e9;font-weight:600">Performans Panosu</div>
+          </div>
         </div>
         <button onclick="kpiRaporExcel()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer">⬇️ Excel</button>
       </div>
       <div style="padding:14px">
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
-          <div style="background:linear-gradient(135deg,#26a69a,#00897b);border-radius:14px;padding:14px;color:#fff">
-            <div style="font-size:24px;font-weight:800;line-height:1">${tSefer}</div>
-            <div style="font-size:12px;opacity:0.9;margin-top:4px">🚛 Toplam Sefer</div>
+        <div class="dash-grid">
+
+          <div class="dash-sol">
+            <div class="dash-panels">
+              ${Object.keys(aracKm).length>0?`
+              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
+                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">🚗 Araç KM Dağılımı</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <canvas id="dash-arac-pie" width="110" height="110"></canvas>
+                  <div id="dash-arac-pie-legend" style="flex:1;font-size:11px"></div>
+                </div>
+              </div>`:""}
+              ${(tTutar+nakliyeMaliyet+bakimMaliyet)>0?`
+              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
+                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">💰 Maliyet Kırılımı</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <canvas id="dash-maliyet-pie" width="110" height="110"></canvas>
+                  <div id="dash-maliyet-pie-legend" style="flex:1;font-size:11px"></div>
+                </div>
+              </div>`:""}
+              ${Object.keys(yukKat).length>0?`
+              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
+                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">📦 Yük Kategorisi</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <canvas id="dash-yuk-pie" width="110" height="110"></canvas>
+                  <div id="dash-yuk-pie-legend" style="flex:1;font-size:11px"></div>
+                </div>
+              </div>`:""}
+              ${isDurumVeri.length>0?`
+              <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px">
+                <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">✅ İş Durumu</div>
+                <div style="display:flex;align-items:center;gap:12px">
+                  <canvas id="dash-is-pie" width="110" height="110"></canvas>
+                  <div id="dash-is-pie-legend" style="flex:1;font-size:11px"></div>
+                </div>
+              </div>`:""}
+            </div>
+
+            ${Object.keys(soforKm).length>0?`
+            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
+              <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:6px">👤 Şoför Bazında KM</div>
+              <canvas id="dash-sofor-bar" width="320" height="${Math.max(80, Object.keys(soforKm).length*32)}" style="width:100%;height:auto"></canvas>
+            </div>`:""}
+
+            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
+              <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:6px">📈 Aylık KM Trendi (Son 6 Ay)</div>
+              <canvas id="dash-km-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
+              <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:6px">💸 Aylık Maliyet Trendi (Son 6 Ay)</div>
+              <canvas id="dash-maliyet-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
+              <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:6px">🚛 Aylık Sefer Sayısı (Son 6 Ay)</div>
+              <canvas id="dash-sefer-bar" width="320" height="120" style="width:100%;height:auto"></canvas>
+            </div>
           </div>
-          <div style="background:linear-gradient(135deg,#7e57c2,#5e35b1);border-radius:14px;padding:14px;color:#fff">
-            <div style="font-size:24px;font-weight:800;line-height:1">${tKm.toLocaleString("tr-TR")}</div>
-            <div style="font-size:12px;opacity:0.9;margin-top:4px">🛣️ Toplam KM</div>
+
+          <div class="dash-kpi-kolon">
+            <div style="background:linear-gradient(135deg,#26a69a,#00897b);border-radius:14px;padding:16px;color:#fff">
+              <div style="font-size:24px;font-weight:800;line-height:1">${tSefer}</div>
+              <div style="font-size:12px;opacity:0.9;margin-top:4px">🚛 Toplam Sefer</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#7e57c2,#5e35b1);border-radius:14px;padding:16px;color:#fff">
+              <div style="font-size:24px;font-weight:800;line-height:1">${tKm.toLocaleString("tr-TR")}</div>
+              <div style="font-size:12px;opacity:0.9;margin-top:4px">🛣️ Toplam KM</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#42a5f5,#1e88e5);border-radius:14px;padding:16px;color:#fff">
+              <div style="font-size:24px;font-weight:800;line-height:1">${tYuk.toLocaleString("tr-TR")}</div>
+              <div style="font-size:12px;opacity:0.9;margin-top:4px">📦 Toplam Yük</div>
+            </div>
+            <div style="background:linear-gradient(135deg,#ab47bc,#8e24aa);border-radius:14px;padding:16px;color:#fff">
+              <div style="font-size:20px;font-weight:800;line-height:1">${(tTutar+nakliyeMaliyet+bakimMaliyet).toLocaleString("tr-TR")} <span style="font-size:12px">TL</span></div>
+              <div style="font-size:12px;opacity:0.9;margin-top:4px">💰 Toplam Maliyet</div>
+            </div>
           </div>
-          <div style="background:linear-gradient(135deg,#42a5f5,#1e88e5);border-radius:14px;padding:14px;color:#fff">
-            <div style="font-size:24px;font-weight:800;line-height:1">${tYuk.toLocaleString("tr-TR")}</div>
-            <div style="font-size:12px;opacity:0.9;margin-top:4px">📦 Toplam Yük</div>
-          </div>
-          <div style="background:linear-gradient(135deg,#ab47bc,#8e24aa);border-radius:14px;padding:14px;color:#fff">
-            <div style="font-size:20px;font-weight:800;line-height:1">${(tTutar+nakliyeMaliyet+bakimMaliyet).toLocaleString("tr-TR")} <span style="font-size:12px">TL</span></div>
-            <div style="font-size:12px;opacity:0.9;margin-top:4px">💰 Toplam Maliyet</div>
-          </div>
+
         </div>
-
-        <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:12px">
-          <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:6px">📈 Aylık KM Trendi (Son 6 Ay)</div>
-          <canvas id="dash-km-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
-        </div>
-
-        <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:10px">
-          <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:6px">💸 Aylık Maliyet Trendi (Son 6 Ay)</div>
-          <canvas id="dash-maliyet-trend" width="320" height="120" style="width:100%;height:auto"></canvas>
-        </div>
-
-        ${(tTutar+nakliyeMaliyet+bakimMaliyet)>0?`
-        <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:10px">
-          <div style="font-size:12px;font-weight:700;color:#d1c4e9;margin-bottom:8px">💰 Maliyet Kırılımı</div>
-          <div style="display:flex;align-items:center;gap:14px">
-            <canvas id="dash-maliyet-pie" width="120" height="120"></canvas>
-            <div id="dash-maliyet-pie-legend" style="flex:1;font-size:11px"></div>
-          </div>
-        </div>`:""}
-
-        ${Object.keys(aracKm).length>0?`
-        <div style="background:rgba(255,255,255,0.06);border-radius:14px;padding:12px;margin-top:10px">
-          <div style="font-size:12px;font-weight:700;color:#b2dfdb;margin-bottom:8px">🚗 Araç KM Dağılımı</div>
-          <div style="display:flex;align-items:center;gap:14px">
-            <canvas id="dash-arac-pie" width="120" height="120"></canvas>
-            <div id="dash-arac-pie-legend" style="flex:1;font-size:11px"></div>
-          </div>
-        </div>`:""}
       </div>
     </div>
 
@@ -1201,6 +1321,27 @@ function renderKPI() {
         .sort(function(a,b){ return b.deger-a.deger; });
       cizPastaGrafik("dash-arac-pie","dash-arac-pie-legend", aVeri, ["#7e57c2","#26a69a","#42a5f5","#ab47bc","#ffa726","#66bb6a"]);
     }
+    // Yük kategorisi donut
+    var yKeys = Object.keys(yukKat).filter(function(k){ return yukKat[k]>0; });
+    if(yKeys.length>0) {
+      var yTop = yKeys.reduce(function(a,k){ return a+yukKat[k]; },0);
+      var yVeri = yKeys.map(function(k){ return {etiket:k, deger:yukKat[k], yuzde:yTop>0?Math.round(yukKat[k]/yTop*100):0}; }).sort(function(a,b){ return b.deger-a.deger; });
+      cizPastaGrafik("dash-yuk-pie","dash-yuk-pie-legend", yVeri, ["#42a5f5","#7e57c2","#26a69a","#ffa726","#ab47bc","#66bb6a"]);
+    }
+    // İş durumu donut
+    if(isDurumVeri.length>0) {
+      var iTop = isDurumVeri.reduce(function(a,x){ return a+x.deger; },0);
+      var iVeri = isDurumVeri.map(function(x){ return {etiket:x.etiket, deger:x.deger, yuzde:iTop>0?Math.round(x.deger/iTop*100):0}; });
+      cizPastaGrafik("dash-is-pie","dash-is-pie-legend", iVeri, ["#66bb6a","#ef5350","#ffa726"]);
+    }
+    // Şoför bazında KM (yatay bar)
+    var sKeys = Object.keys(soforKm);
+    if(sKeys.length>0) {
+      var sVeri = sKeys.map(function(k){ return {etiket:k, deger:soforKm[k]}; }).sort(function(a,b){ return b.deger-a.deger; });
+      cizYatayBar("dash-sofor-bar", sVeri, "#7e57c2");
+    }
+    // Aylık sefer sayısı (dikey bar)
+    cizDikeyBar("dash-sefer-bar", aylikSeri("sefer",6), "#42a5f5");
   }, 180);
 }
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
@@ -1316,6 +1457,40 @@ function barPNG(noktalar, renk) {
   return cv.toDataURL("image/png");
 }
 
+// Belirli bir aracın (plaka) son N ayının km başı maliyeti
+function aracAylikKmMaliyet(plaka, ayN) {
+  var simdi = new Date();
+  var aylarKisa = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  var lf = parseFloat(DB.litreFiyati)||0;
+  var sonuc = [];
+  for(var k=ayN-1; k>=0; k--) {
+    var d = new Date(simdi.getFullYear(), simdi.getMonth()-k, 1);
+    var onek = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    var litre = (DB.yakitlar||[]).filter(function(y){ return y.plaka===plaka && y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.litre||0); },0);
+    var km = (DB.tamamlananlar||[]).filter(function(s){ return s.plaka===plaka && s.tarih && s.tarih.startsWith(onek) && s.km_fark; }).reduce(function(a,s){ return a+(s.km_fark||0); },0);
+    var maliyet = km>0 ? (litre*lf)/km : null;
+    sonuc.push({ay:aylarKisa[d.getMonth()], yil:d.getFullYear(), litre:litre, km:km, maliyet:maliyet});
+  }
+  return sonuc;
+}
+
+// Son N ayın km başı maliyetini hesaplar: (o ay alınan litre × güncel fiyat) / o ay gidilen km
+function aylikKmMaliyet(ayN) {
+  var simdi = new Date();
+  var aylarKisa = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  var lf = parseFloat(DB.litreFiyati)||0;
+  var sonuc = [];
+  for(var k=ayN-1; k>=0; k--) {
+    var d = new Date(simdi.getFullYear(), simdi.getMonth()-k, 1);
+    var onek = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    var litre = (DB.yakitlar||[]).filter(function(y){ return y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.litre||0); },0);
+    var km = (DB.tamamlananlar||[]).filter(function(s){ return s.tarih && s.tarih.startsWith(onek) && s.km_fark; }).reduce(function(a,s){ return a+(s.km_fark||0); },0);
+    var maliyet = km>0 ? (litre*lf)/km : null;
+    sonuc.push({ay:aylarKisa[d.getMonth()], yil:d.getFullYear(), litre:litre, km:km, maliyet:maliyet});
+  }
+  return sonuc;
+}
+
 // Son N ayın aylık toplamını hesaplar. tip: 'km' | 'maliyet'
 function aylikSeri(tip, ayN) {
   var simdi = new Date();
@@ -1335,6 +1510,8 @@ function aylikSeri(tip, ayN) {
       var nk = (DB.nakliyeler||[]).filter(function(n){ return n.tarih && n.tarih.startsWith(onek); }).reduce(function(a,n){ return a+(n.fiyat||0); },0);
       var bk = (DB.bakimlar||[]).filter(function(b){ return b.tarih && b.tarih.startsWith(onek); }).reduce(function(a,b){ return a+(b.maliyet||0); },0);
       deger = yk+nk+bk;
+    } else if(tip==="sefer") {
+      deger = (DB.tamamlananlar||[]).filter(function(s){ return s.tarih && s.tarih.startsWith(onek); }).length;
     }
     sonuc.push({label:aylarKisa[ay], deger:Math.round(deger)});
   }
@@ -1342,6 +1519,69 @@ function aylikSeri(tip, ayN) {
 }
 
 // Canvas'a alan (area) + çizgi grafik çizer; etiketli, mor temalı
+// Ekrana yatay bar grafik çizer (şoför/araç sıralaması için)
+function cizYatayBar(canvasId, veriler, renk) {
+  var cv = document.getElementById(canvasId);
+  if(!cv || !veriler || veriler.length===0) return;
+  var ctx = cv.getContext("2d");
+  var dpr = window.devicePixelRatio||1;
+  var cssW = cv.clientWidth||cv.width, cssH = cv.clientHeight||cv.height;
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW, H=cssH;
+  ctx.clearRect(0,0,W,H);
+  var n = veriler.length;
+  var max = Math.max.apply(null, veriler.map(function(v){return v.deger;})); if(max===0) max=1;
+  var satirH = H/n;
+  var barH = Math.min(22, satirH*0.55);
+  var etiketGen = 70;
+  veriler.forEach(function(v,i){
+    var y = i*satirH + satirH/2;
+    // etiket
+    ctx.fillStyle="#d1c4e9"; ctx.font="11px Arial"; ctx.textAlign="left"; ctx.textBaseline="middle";
+    var et = v.etiket.length>10 ? v.etiket.substring(0,9)+"…" : v.etiket;
+    ctx.fillText(et, 0, y);
+    // bar
+    var barW = (v.deger/max)*(W-etiketGen-50);
+    ctx.fillStyle=renk;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(etiketGen, y-barH/2, Math.max(barW,2), barH, 4); else ctx.rect(etiketGen, y-barH/2, Math.max(barW,2), barH);
+    ctx.fill();
+    // değer
+    ctx.fillStyle="#fff"; ctx.font="bold 11px Arial"; ctx.textAlign="left";
+    ctx.fillText(v.deger.toLocaleString("tr-TR"), etiketGen+barW+6, y);
+  });
+}
+
+// Ekrana dikey bar grafik çizer (aylık sefer sayısı için)
+function cizDikeyBar(canvasId, noktalar, renk) {
+  var cv = document.getElementById(canvasId);
+  if(!cv || !noktalar || noktalar.length===0) return;
+  var ctx = cv.getContext("2d");
+  var dpr = window.devicePixelRatio||1;
+  var cssW = cv.clientWidth||cv.width, cssH = cv.clientHeight||cv.height;
+  cv.width = Math.round(cssW*dpr); cv.height = Math.round(cssH*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  var W=cssW, H=cssH;
+  ctx.clearRect(0,0,W,H);
+  var padB=20, padT=18;
+  var n = noktalar.length;
+  var max = Math.max.apply(null, noktalar.map(function(p){return p.deger;})); if(max===0) max=1;
+  var alanW = W/n;
+  var barW = alanW*0.55;
+  noktalar.forEach(function(nt,i){
+    var x = i*alanW + (alanW-barW)/2;
+    var h = (nt.deger/max)*(H-padT-padB);
+    var y = H-padB-h;
+    ctx.fillStyle=renk;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x,y,barW,Math.max(h,2),4); else ctx.rect(x,y,barW,Math.max(h,2));
+    ctx.fill();
+    if(nt.deger>0){ ctx.fillStyle="#fff"; ctx.font="bold 10px Arial"; ctx.textAlign="center"; ctx.fillText(nt.deger, x+barW/2, y-4); }
+    ctx.fillStyle="#8fa3c4"; ctx.font="9px Arial"; ctx.textAlign="center"; ctx.fillText(nt.label, x+barW/2, H-6);
+  });
+}
+
 function cizAlanGrafik(canvasId, noktalar, cizgiRenk, dolguRenk) {
   var cv = document.getElementById(canvasId);
   if(!cv || !noktalar || noktalar.length===0) return;
@@ -1475,7 +1715,12 @@ async function kpiRaporExcel() {
   var bakTutar = bakimlar.reduce(function(a,b){ return a+(b.maliyet||0); },0);
   var toplamMaliyet = yakitTutar+nakTutar+bakTutar;
   var mesaiSaat = Math.round(mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); },0)/60);
-  var kmBirim = tKm>0 ? yakitTutar/tKm : 0;
+  var lfE = parseFloat(DB.litreFiyati)||0;
+  var tukAraclarE = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; });
+  var kmBirim = 0;
+  if(lfE>0 && tukAraclarE.length>0) {
+    kmBirim = tukAraclarE.reduce(function(s,a){ return s + (parseFloat(a.tuketim)/100*lfE); }, 0) / tukAraclarE.length;
+  }
   var isTamam = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
   var isOlmadi = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
   var planUyum = (isTamam+isOlmadi)>0 ? Math.round(isTamam/(isTamam+isOlmadi)*100) : null;
@@ -1876,8 +2121,14 @@ function renderAraclar() {
   setContent(`
     <div class="card">
       <div class="section-title">Yeni Araç Ekle</div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
         <input type="text" id="yeni-plaka" placeholder="34 ABC 001" style="flex:1"/>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="field" style="flex:1;margin:0">
+          <label style="font-size:11px;color:#aeaeb2">Tüketim (100 km'de litre)</label>
+          <input type="number" id="yeni-tuketim" placeholder="32" step="any"/>
+        </div>
         <button class="btn btn-green" style="width:auto;padding:10px 16px;white-space:nowrap" onclick="aracEkle()">+ Ekle</button>
       </div>
     </div>
@@ -1891,6 +2142,9 @@ function renderAraclar() {
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${a.plaka}</div>
             <div style="font-size:11px;color:#636366">${say} sefer tamamlandı</div>
+            <div style="font-size:11px;color:#aeaeb2;margin-top:4px;display:flex;align-items:center;gap:4px">
+              ⛽ <input type="number" value="${a.tuketim||""}" placeholder="—" step="any" onchange="aracTuketimGuncelle(${a.id}, this.value)" style="width:55px;background:#2c2c2e;border:1px solid #48484a;border-radius:6px;color:#f2f2f7;font-size:11px;padding:2px 6px;text-align:center"/> lt/100km
+            </div>
           </div>
           <span class="badge ${kullanan?"badge-orange":"badge-green"}">${kullanan?kullanan.sofor+" - Yolda":"Müsait"}</span>
           <button onclick="aracSil(${a.id})" style="background:none;color:#ff453a;font-size:18px;padding:0;${kullanan?"opacity:.3;cursor:not-allowed":""}"${kullanan?'disabled':''}>🗑️</button>
@@ -1903,14 +2157,24 @@ function renderAraclar() {
 
 async function aracEkle() {
   const pl = document.getElementById("yeni-plaka").value.trim().toUpperCase();
+  const tuk = parseFloat(document.getElementById("yeni-tuketim").value) || null;
   if(!pl) { showToast("Plaka girin!","error"); return; }
   if(DB.araclar.find(a=>a.plaka===pl)) { showToast("Bu plaka zaten var!","error"); return; }
   try {
-    const data = await aracEkleDB(pl);
+    const data = await aracEkleDB(pl, tuk);
     DB.araclar.push(data);
     showToast(pl+" eklendi!");
     renderAraclar();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
+}
+
+async function aracTuketimGuncelle(id, deger) {
+  const tuk = parseFloat(deger) || null;
+  try {
+    await supa.from('araclar').update({tuketim:tuk}).eq('id',id);
+    DB.araclar = DB.araclar.map(function(a){ return a.id===id ? Object.assign({},a,{tuketim:tuk}) : a; });
+    showToast("Tüketim güncellendi.");
+  } catch(e) { showToast("Hata: "+(e.message||"güncellenemedi"),"error"); }
 }
 
 async function aracSil(id) {
@@ -3131,8 +3395,8 @@ async function soforEkleDB(sofor) {
 }
 async function soforSilDB(isim) { await supa.from('soforler').delete().eq('isim',isim); }
 async function soforPinGuncelleDB(isim,pin) { await supa.from('soforler').update({pin}).eq('isim',isim); }
-async function aracEkleDB(plaka) {
-  const {data,error} = await supa.from('araclar').insert({plaka}).select().single();
+async function aracEkleDB(plaka, tuketim) {
+  const {data,error} = await supa.from('araclar').insert({plaka, tuketim: tuketim||null}).select().single();
   if(error) throw error; return data;
 }
 async function aracSilDB(id) { await supa.from('araclar').delete().eq('id',id); }
