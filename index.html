@@ -911,7 +911,6 @@ function seferKarti(s) {
         <div style="color:#636366;font-size:10px;padding-left:4px">↓</div>
         <div style="display:flex;align-items:center;gap:8px">
           <span>📍 <span style="color:#f2f2f7">${s.varis_isim}</span></span>
-          ${s.mesafe?`<span class="badge badge-blue">${s.mesafe} km</span>`:""}
         </div>
         ${s.cikis_lat&&s.varis_lat?`
           <a href="https://www.google.com/maps/dir/?api=1&origin=${s.cikis_lat},${s.cikis_lng}&destination=${s.varis_lat},${s.varis_lng}&travelmode=driving"
@@ -1785,7 +1784,6 @@ function renderListe() {
         </div>
         <div style="font-size:12px;color:#aeaeb2">
           <div style="margin-bottom:3px">🏠 ${s.cikis_isim} <span style="color:#636366">→</span> 📍 ${s.varis_isim}
-            ${s.mesafe?`<span class="badge badge-blue" style="font-size:10px">${s.mesafe} km</span>`:""}
           </div>
           ${s.varis_lat?`<div style="margin-bottom:3px"><a href="https://www.google.com/maps?q=${s.varis_lat},${s.varis_lng}" target="_blank" style="color:#0a84ff;text-decoration:none;font-size:11px">🗺️ Haritada Gör</a></div>`:""}
           <div style="display:flex;gap:10px;flex-wrap:wrap;color:#636366">
