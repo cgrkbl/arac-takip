@@ -343,6 +343,8 @@ function formatSure(d) {
 }
 
 function mesafe(la1,ln1,la2,ln2) {
+  la1=parseFloat(la1); ln1=parseFloat(ln1); la2=parseFloat(la2); ln2=parseFloat(ln2);
+  if(isNaN(la1)||isNaN(ln1)||isNaN(la2)||isNaN(ln2)) return 0;
   const R=6371,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1)*Math.PI/180;
   const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2;
   return Math.round(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
@@ -1081,6 +1083,44 @@ function renderKPI() {
       </div>
     </div>
 
+    <div class="card" style="background:linear-gradient(135deg,#1a2744,#0f1828);border:1px solid #2a3f5f;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px">📋 EK GÖSTERGELER</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
+          <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">KM BİRİM<br>MALİYET</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;margin-top:4px">${kmBirimMaliyet!==null?kmBirimMaliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</div>
+          <div style="font-size:10px;color:#8fa3c4">TL/km</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
+          <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px">${nakliyeMaliyet.toLocaleString("tr-TR")}</div>
+          <div style="font-size:10px;color:#8fa3c4">TL</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">ARAÇ PLAN<br>GERÇEKLEŞEN UYUM</div>
+          <div style="font-size:24px;font-weight:800;color:#fff;margin-top:2px">${planUyum!==""?planUyum+"%":"—"}</div>
+          <div style="font-size:10px;color:#8fa3c4">${isKararli>0?isTamam+"/"+isKararli+" iş":"iş listesinden"}</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">SEVKİYAT<br>MİKTARI</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">${sevkiyatSeferSayisi}</div>
+          <div style="font-size:10px;color:#8fa3c4">sefer • ${sevkiyatYukMiktari.toLocaleString("tr-TR")} yük</div>
+        </div>
+        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
+          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">İŞ KAZASI<br>MİKTARI</div>
+          <input type="number" inputmode="numeric" class="kpi-input" min="0" max="9999" value="${dash.isKazasi}" placeholder="—" oninput="if(this.value>9999)this.value=9999;kpiInputBoyut(this);" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:${(String(dash.isKazasi).length||1)+0.5}ch;min-width:1ch;max-width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
+          <div style="font-size:10px;color:#8fa3c4;margin-top:2px">adet</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
+    </div>
+
     <div class="card" style="background:linear-gradient(135deg,#4a2c7a,#2d1b4e);border:none;margin-bottom:12px;padding:0;overflow:hidden">
       <div style="background:linear-gradient(135deg,#5e35b1,#4527a0);padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
         <div>
@@ -1139,43 +1179,6 @@ function renderKPI() {
       </div>
     </div>
 
-    <div class="card" style="background:linear-gradient(135deg,#1a2744,#0f1828);border:1px solid #2a3f5f;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div style="font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px">📋 EK GÖSTERGELER</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">FAZLA MESAİ<br>SAAT</div>
-          <div style="font-size:26px;font-weight:800;color:#fff">${toplamMesaiSaat}</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">KM BİRİM<br>MALİYET</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;margin-top:4px">${kmBirimMaliyet!==null?kmBirimMaliyet.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—"}</div>
-          <div style="font-size:10px;color:#8fa3c4">TL/km</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">NAKLİYE<br>MALİYETLERİ</div>
-          <div style="font-size:18px;font-weight:800;color:#fff;margin-top:4px">${nakliyeMaliyet.toLocaleString("tr-TR")}</div>
-          <div style="font-size:10px;color:#8fa3c4">TL</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">ARAÇ PLAN<br>GERÇEKLEŞEN UYUM</div>
-          <div style="font-size:24px;font-weight:800;color:#fff;margin-top:2px">${planUyum!==""?planUyum+"%":"—"}</div>
-          <div style="font-size:10px;color:#8fa3c4">${isKararli>0?isTamam+"/"+isKararli+" iş":"iş listesinden"}</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">SEVKİYAT<br>MİKTARI</div>
-          <div style="font-size:22px;font-weight:800;color:#fff;margin-top:2px">${sevkiyatSeferSayisi}</div>
-          <div style="font-size:10px;color:#8fa3c4">sefer • ${sevkiyatYukMiktari.toLocaleString("tr-TR")} yük</div>
-        </div>
-        <div style="background:#15233d;border-radius:12px;padding:12px 10px;text-align:center;overflow:hidden">
-          <div style="font-size:11px;color:#8fa3c4;font-weight:700;line-height:1.2;margin-bottom:6px">İŞ KAZASI<br>MİKTARI</div>
-          <input type="number" inputmode="numeric" class="kpi-input" min="0" max="9999" value="${dash.isKazasi}" placeholder="—" oninput="if(this.value>9999)this.value=9999;kpiInputBoyut(this);" onchange="kpiDashGuncelle('isKazasi',this.value)" style="width:${(String(dash.isKazasi).length||1)+0.5}ch;min-width:1ch;max-width:100%;background:transparent;border:none;border-bottom:1px solid #2a3f5f;color:#fff;font-size:24px;font-weight:800;text-align:center;outline:none;padding:0"/>
-          <div style="font-size:10px;color:#8fa3c4;margin-top:2px">adet</div>
-        </div>
-      </div>
-      <div style="font-size:10px;color:#5a6f8f;margin-top:8px;text-align:center">Boş kartlara değer girip Excel'e aktarabilirsiniz</div>
-    </div>
 
     <div style="height:20px"></div>
   `);
@@ -1597,96 +1600,6 @@ async function kpiRaporExcel() {
     });
     R++;
   }
-
-  // ═══ MALİYET RAPORU (orijinal görünüm, birebir) ═══
-  var malBakimlar = bakimlar.filter(function(b){ return b.maliyet>0; });
-  var mYakit = yakitlar.reduce(function(a,y){ return a+(y.tutar||0); },0);
-  var mNak = nakliyeler.reduce(function(a,n){ return a+(n.fiyat||0); },0);
-  var mBak = malBakimlar.reduce(function(a,b){ return a+(b.maliyet||0); },0);
-  var mTop = mYakit+mNak+mBak;
-  var malBas = bas || "Başlangıç", malBit = bit || "Bugün";
-
-  // Başlık (A-D birleşik, siyah zemin)
-  ws.mergeCells(R,2,R,5);
-  var mb = ws.getCell(R,2);
-  mb.value = malBas+" / "+malBit+" MALİYET RAPORU";
-  mb.font = {name:"Arial",bold:true,size:14,color:{argb:"FFFFFFFF"}};
-  mb.fill = {type:"pattern",pattern:"solid",fgColor:{argb:"FF1c1c1e"}};
-  mb.alignment = {horizontal:"center",vertical:"middle"};
-  mb.border = {top:{style:"medium"},bottom:{style:"medium"},left:{style:"medium"},right:{style:"medium"}};
-  ws.getRow(R).height = 32; R++;
-  ws.getRow(R).height = 8; R++;
-
-  // Özet satırları
-  var mOzet = [["⛽ Yakıt Toplamı",mYakit,false],["🚚 Nakliye Toplamı",mNak,false],["🔧 Bakım Toplamı",mBak,true],["💰 Genel Toplam",mTop,false]];
-  mOzet.forEach(function(o){
-    ws.getRow(R).height = 22;
-    var c1=ws.getCell(R,2); c1.value=o[0]; c1.font={name:"Arial",bold:true,size:12};
-    var c4=ws.getCell(R,5); c4.value=o[1]; c4.font={name:"Arial",bold:true,size:12};
-    c4.numFmt='#,##0.00 "TL"'; c4.alignment={horizontal:"right"};
-    c4.fill={type:"pattern",pattern:"solid",fgColor:{argb:o[2]?"FFFF9F0A":"FF2c2c2e"}};
-    if(o[2]) c1.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFF9F0A"}};
-    else c4.font={name:"Arial",bold:true,size:12,color:{argb:"FFFFFFFF"}};
-    R++;
-  });
-  ws.getRow(R).height=6; R++;
-
-  // Yakıt tablosu (yeşil başlık)
-  ws.getRow(R).height=22;
-  ["Şoför","Plaka","Tarih","Tutar (TL)"].forEach(function(h,i){
-    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
-    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF30d158"}}; c.alignment={horizontal:"center"};
-    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
-  });
-  R++;
-  yakitlar.forEach(function(y,i){
-    ws.getRow(R).height=20; var son=i===yakitlar.length-1;
-    [y.sofor||"",y.plaka||"",y.tarih||"",y.tutar||0].forEach(function(v,ci){
-      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
-      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
-      if(ci===3) c.numFmt='#,##0.00 "TL"';
-    });
-    R++;
-  });
-  ws.getRow(R).height=8; R++;
-
-  // Nakliye tablosu (mavi başlık)
-  ws.getRow(R).height=22;
-  ["Sevk Adresi","Açıklama","Tarih","Tutar (TL)"].forEach(function(h,i){
-    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
-    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0a84ff"}}; c.alignment={horizontal:"center"};
-    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
-  });
-  R++;
-  nakliyeler.forEach(function(n,i){
-    ws.getRow(R).height=20; var son=i===nakliyeler.length-1;
-    [n.sevk_adresi||"",n.aciklama||"",n.tarih||"",n.fiyat||0].forEach(function(v,ci){
-      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
-      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
-      if(ci===3) c.numFmt='#,##0.00 "TL"';
-    });
-    R++;
-  });
-  ws.getRow(R).height=8; R++;
-
-  // Bakım tablosu (mor başlık)
-  ws.getRow(R).height=22;
-  ["Plaka","Bakım Türü","Tarih","Tutar (TL)"].forEach(function(h,i){
-    var c=ws.getCell(R,i+2); c.value=h; c.font={name:"Arial",bold:true,size:11};
-    c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFbf5af2"}}; c.alignment={horizontal:"center"};
-    c.border={top:{style:"medium"},bottom:{style:"thin"},left:{style:i===0?"medium":"thin"},right:{style:i===3?"medium":"thin"}};
-  });
-  R++;
-  malBakimlar.forEach(function(b,i){
-    ws.getRow(R).height=20; var son=i===malBakimlar.length-1;
-    [b.plaka||"",b.tur||"",b.tarih||"",b.maliyet||0].forEach(function(v,ci){
-      var c=ws.getCell(R,ci+2); c.value=v; c.font={name:"Arial",size:11};
-      c.border={top:{style:"thin"},bottom:{style:son?"medium":"thin"},left:{style:ci===0?"medium":"thin"},right:{style:ci===3?"medium":"thin"}};
-      if(ci===3) c.numFmt='#,##0.00 "TL"';
-    });
-    R++;
-  });
-  ws.getRow(R).height=10; R++;
 
   // ── Maliyet kırılımı tablosu ──
   var malTabloRow = R; // başlık satırı
@@ -2233,7 +2146,7 @@ async function konumEkle() {
   if(!isim||!lat||!lng){showToast("Zorunlu alanları doldurun!","error");return;}
   try {
     const data = await konumEkleDB({isim,adres,lat,lng});
-    DB.konumlar.push(data);
+    DB.konumlar.push(Object.assign({}, data, {lat:parseFloat(data.lat), lng:parseFloat(data.lng)}));
     showToast(isim+" eklendi!");
     renderKonumlar();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
@@ -3152,7 +3065,7 @@ async function dbYukle() {
     ]);
     if(soforler.data) DB.soforler = soforler.data;
     if(araclar.data) DB.araclar = araclar.data;
-    if(konumlar.data) DB.konumlar = konumlar.data;
+    if(konumlar.data) DB.konumlar = konumlar.data.map(function(k){ return Object.assign({}, k, {lat:parseFloat(k.lat), lng:parseFloat(k.lng)}); });
     if(fabrikaRes.data) DB.fabrika = fabrikaRes.data;
     if(aktif.data) DB.aktifSeferler = aktif.data.map(seferDBdenJS);
     if(tamamlanan.data) DB.tamamlananlar = tamamlanan.data.map(seferDBdenJS);
