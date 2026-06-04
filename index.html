@@ -795,14 +795,10 @@ function varisGuncelle() {
   if(!VARIS_SEL.lat) return;
   const basLat = CIKIS_SEL.lat || DB.fabrika.lat;
   const basLng = CIKIS_SEL.lng || DB.fabrika.lng;
-  const km = mesafe(basLat, basLng, VARIS_SEL.lat, VARIS_SEL.lng);
   el.style.display="block";
   el.innerHTML=`
     <div style="background:#1c1c1e;border:1px solid #0a84ff44;border-radius:10px;padding:12px 14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:700">${VARIS_SEL.isim}</div>
-        <span class="badge badge-blue">📏 ${km} km</span>
-      </div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px">${VARIS_SEL.isim}</div>
       <a href="https://www.google.com/maps/dir/?api=1&origin=${basLat},${basLng}&destination=${VARIS_SEL.lat},${VARIS_SEL.lng}&travelmode=driving"
         target="_blank" style="display:block;text-align:center;background:#1a73e8;color:#fff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;text-decoration:none">
         🗺️ Rotayı Google Maps'te Aç
