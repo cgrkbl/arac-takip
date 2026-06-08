@@ -139,8 +139,8 @@ textarea{resize:vertical;}
 @media (min-width:720px) {
   .dash-grid { grid-template-columns:3fr 1fr; align-items:start; }
   .dash-panels { grid-template-columns:1fr 1fr; }
-  .dash-kpi-kolon { display:flex; flex-direction:column; gap:12px; }
-  .dash-kpi-kolon .dash-kpi-kart { height:90px; display:flex; flex-direction:column; justify-content:center; }
+  .dash-kpi-kolon { display:flex; flex-direction:column; gap:10px; }
+  .dash-kpi-kolon .dash-kpi-kart { height:72px; display:flex; flex-direction:column; justify-content:center; padding:12px 16px; }
   .dash-row3 { grid-template-columns:1fr 1fr 1fr; }
   .dash-row2 { grid-template-columns:1fr 1fr; }
 }
@@ -1235,7 +1235,8 @@ function renderKPI() {
               {tip:"km",      renk:"#42a5f5", ikon:"🛣️", ad:"TOPLAM KM",        val:kutuToplamKm(filtreMod).toLocaleString("tr-TR")},
               {tip:"yakit",   renk:"#7e57c2", ikon:"⛽", ad:"YAKIT MALİYETİ",   val:kutuYakitMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"},
               {tip:"bakim",   renk:"#5e35b1", ikon:"🔧", ad:"BAKIM MALİYETİ",   val:kutuBakimMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"},
-              {tip:"nakliye", renk:"#ab47bc", ikon:"🚚", ad:"NAKLİYE MALİYETİ", val:kutuNakliyeMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"}
+              {tip:"nakliye", renk:"#ab47bc", ikon:"🚚", ad:"NAKLİYE MALİYETİ", val:kutuNakliyeMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"},
+              {tip:"isdurum", renk:"#66bb6a", ikon:"✅", ad:"İŞ DURUMU", val:(window.KPI_isDurum&&window.KPI_isDurum.length?window.KPI_isDurum.reduce(function(a,x){return a+x.deger;},0):0)+" iş"}
             ].map(function(k){
               var secili = (window.KPI_AKTIF||"sefer")===k.tip;
               return '<div onclick="kpiAktifSec(&quot;'+k.tip+'&quot;)" class="dash-kpi-kart" style="background:'+k.renk+';cursor:pointer;'+(secili?"box-shadow:0 0 0 3px #fff, 0 4px 14px rgba(0,0,0,0.4)":"opacity:0.78")+'"><div class="dash-kpi-no">'+k.ikon+' '+k.ad+'</div><div class="dash-kpi-val">'+k.val+'</div></div>';
@@ -1260,7 +1261,10 @@ function kategoriCiz(aktif, mod) {
     cizDikeyBar("kp-trend", aylikSeri("sefer",12), "#26a69a");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(){return 1;}), "#26a69a");
     cizYatayBar("kp-arac", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.plaka;}, function(){return 1;}), "#26a69a");
+  } else if(aktif==="isdurum") {
+    cizDikeyBar("kp-trend", aylikSeri("sefer",12), "#26a69a");
     cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(window.KPI_isDurum||[]), ["#66bb6a","#ef5350","#ffa726"]);
+    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(){return 1;}), "#26a69a");
   } else if(aktif==="yuk") {
     cizDikeyBar("kp-trend", aylikSeriYuk(12), "#4dd0e1");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(s){return parseFloat(s.yuk_miktari)||0;}), "#4dd0e1");
@@ -1271,8 +1275,12 @@ function kategoriCiz(aktif, mod) {
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(s){return parseFloat(s.km_fark)||0;}), "#42a5f5");
   } else if(aktif==="yakit") {
     cizAlanGrafik("kp-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
-    cizYatayBar("kp-arac", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.plaka;}, function(y){return y.tutar||0;}), "#7e57c2");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.sofor;}, function(y){return y.tutar||0;}), "#7e57c2");
+    var lfY = parseFloat(DB.litreFiyati)||0;
+    var tlkm = (DB.araclar||[]).filter(function(a){return parseFloat(a.tuketim)>0;})
+      .map(function(a){return {etiket:a.plaka, deger:Math.round(parseFloat(a.tuketim)/100*lfY*100)/100};})
+      .sort(function(a,b){return b.deger-a.deger;});
+    cizYatayBar("kp-arac", tlkm, "#7e57c2");
   } else if(aktif==="bakim") {
     cizAlanGrafik("kp-trend", aylikSeri("bakim",12), "#ce93d8", "rgba(186,104,200,0.40)");
     cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(grupla(donemFiltre(DB.bakimlar||[],mod), function(b){return b.tur||"Diğer";}, function(b){return b.maliyet||0;})), palet);
@@ -1303,12 +1311,13 @@ function aylikSeriYuk(ayN) {
 // Aktif kategoriye göre sol panel HTML'ini üretir
 function kategoriPanelleri(aktif) {
   var basliklar = {
-    sefer:   {trend:"📈 Aylık Sefer Sayısı", sofor:"👤 Şoför Bazında Sefer", arac:"🚗 Araç Bazında Sefer", pie:"✅ İş Durumu"},
+    sefer:   {trend:"📈 Aylık Sefer Sayısı", sofor:"👤 Şoför Bazında Sefer", arac:"🚗 Araç Bazında Sefer", pie:""},
     yuk:     {trend:"📈 Aylık Yük (kg)", sofor:"👤 Şoför Bazında Yük", arac:"🚗 Araç Bazında Yük", pie:""},
     km:      {trend:"📈 Aylık KM", sofor:"👤 Şoför Bazında KM", arac:"", pie:"🚗 Araç KM Dağılımı"},
-    yakit:   {trend:"📈 Aylık Yakıt Maliyeti", sofor:"👤 Şoför Bazında Yakıt", arac:"🚗 Araç Bazında Yakıt", pie:""},
+    yakit:   {trend:"📈 Aylık Yakıt Maliyeti", sofor:"👤 Şoför Bazında Yakıt", arac:"🚗 Araç Bazlı KM Maliyeti (TL/km)", pie:""},
     bakim:   {trend:"📈 Aylık Bakım Maliyeti", sofor:"", arac:"🚗 Araç Bazında Bakım", pie:"🔧 Bakım Türü Dağılımı"},
-    nakliye: {trend:"📈 Aylık Nakliye Maliyeti", sofor:"", arac:"📍 Sevk Adresine Göre Nakliye", pie:""}
+    nakliye: {trend:"📈 Aylık Nakliye Maliyeti", sofor:"", arac:"📍 Sevk Adresine Göre Nakliye", pie:""},
+    isdurum: {trend:"📈 Aylık Sefer Sayısı", sofor:"👤 Şoför Bazında Sefer", arac:"🚗 Araç Bazında Sefer", pie:"✅ İş Durumu"}
   };
   var b = basliklar[aktif] || basliklar.sefer;
   function panel(baslik, id, tip, h, genis) {
@@ -1320,15 +1329,9 @@ function kategoriPanelleri(aktif) {
   }
   // Üst sıra: geniş trend grafiği
   var ust = '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.trend,"kp-trend","trend",220)+'</div>';
-  var alt;
-  if(aktif==="sefer") {
-    // Sefer: Araç + Şoför yan yana, altında İş Durumu 2 blok geniş
-    alt = '<div class="dash-row2">'+panel(b.arac,"kp-arac","bar",240)+panel(b.sofor,"kp-sofor","bar",240)+'</div>'
-        + '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.pie,"kp-pie","pie",0,true)+'</div>';
-  } else {
-    var altPaneller = [panel(b.pie,"kp-pie","pie"), panel(b.sofor,"kp-sofor","bar",240), panel(b.arac,"kp-arac","bar",240)].filter(function(x){return x;});
-    alt = '<div class="dash-row2">'+altPaneller.join("")+'</div>';
-  }
+  // Alt sıra: en fazla 2 panel (eşit yükseklik için tüm kategorilerde aynı)
+  var altPaneller = [panel(b.pie,"kp-pie","pie"), panel(b.sofor,"kp-sofor","bar",240), panel(b.arac,"kp-arac","bar",240)].filter(function(x){return x;}).slice(0,2);
+  var alt = '<div class="dash-row2">'+altPaneller.join("")+'</div>';
   return ust+alt;
 }
 function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
