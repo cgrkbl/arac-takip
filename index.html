@@ -2040,6 +2040,7 @@ function renderListe() {
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <span class="badge badge-green">${s.km_fark} km</span>
             <span class="badge badge-orange">⏱️ ${formatSure(s.bekleme_dakika)}</span>
+            ${KUL.rol==="admin"?`<button onclick="seferSil(${s.id})" style="background:none;border:none;color:#ff453a;font-size:16px;padding:0;cursor:pointer;margin-top:2px">🗑️</button>`:""}
           </div>
         </div>
         <div style="font-size:12px;color:#aeaeb2">
@@ -2060,6 +2061,19 @@ function renderListe() {
 }
 
 function listeFiltreGuncelle(v) { FILTRE_SOFOR=v; renderListe(); }
+
+async function seferSil(id) {
+  if(KUL.rol!=="admin") { showToast("Bu işlem için yetkiniz yok.","error"); return; }
+  if(!confirm("Bu sefer kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
+  try {
+    await seferSilDB(id);
+    DB.tamamlananlar = DB.tamamlananlar.filter(function(s){ return s.id!==id; });
+    showToast("Sefer kaydı silindi.");
+    if(AKTIF_TAB==="harita") renderHarita(); else renderListe();
+  } catch(e) {
+    showToast("Silinemedi: "+(e.message||"hata"),"error");
+  }
+}
 function listeTarihGuncelle(tip,v) { if(tip==="bas") FILTRE_BAS=v; else FILTRE_BIT=v; renderListe(); }
 function listeHizliFiltre(gun) {
   if(gun===0) { FILTRE_BAS=""; FILTRE_BIT=""; }
@@ -3415,6 +3429,7 @@ async function aracEkleDB(plaka, tuketim) {
   if(error) throw error; return data;
 }
 async function aracSilDB(id) { await supa.from('araclar').delete().eq('id',id); }
+async function seferSilDB(id) { await supa.from('seferler').delete().eq('id',id); }
 async function konumEkleDB(k) {
   const {data,error} = await supa.from('konumlar').insert({isim:k.isim,adres:k.adres||"",lat:k.lat,lng:k.lng}).select().single();
   if(error) throw error; return data;
