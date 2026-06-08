@@ -132,14 +132,14 @@ textarea{resize:vertical;}
 .dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; }
 .dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
 .dash-panel-bos { height:170px; display:flex; align-items:center; justify-content:center; color:#5a6f8f; font-size:12px; border:1px dashed #5a4b7a; border-radius:10px; }
-.dash-kpi-kart { border-radius:14px; padding:20px 16px; color:#fff; }
+.dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
 .dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
-.dash-kpi-val { font-size:24px; font-weight:800; line-height:1; }
+.dash-kpi-val { font-size:20px; font-weight:800; line-height:1; }
 .dash-kpi-filtre { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
 @media (min-width:720px) {
-  .dash-grid { grid-template-columns:3fr 1fr; }
+  .dash-grid { grid-template-columns:3fr 1fr; align-items:start; }
   .dash-panels { grid-template-columns:1fr 1fr; }
-  .dash-kpi-kolon { grid-template-columns:1fr; }
+  .dash-kpi-kolon { display:flex; flex-direction:column; gap:10px; }
   .dash-row3 { grid-template-columns:1fr 1fr 1fr; }
   .dash-row2 { grid-template-columns:1fr 1fr; }
 }
@@ -1025,6 +1025,62 @@ function kutuYakitMaliyet(mod) {
   return data.reduce(function(s,y){ return s+(y.tutar||0); }, 0);
 }
 
+// Belirli dönemde toplam taşınan yük (kg)
+function kutuToplamYuk(mod) {
+  var a = donemAralik(mod);
+  var data = DB.tamamlananlar || [];
+  if(a.bas) data = data.filter(function(s){ return s.tarih>=a.bas && s.tarih<=a.bit; });
+  return data.reduce(function(s,x){ return s+(parseFloat(x.yuk_miktari)||0); }, 0);
+}
+
+// Belirli dönemde toplam km
+function kutuToplamKm(mod) {
+  var a = donemAralik(mod);
+  var data = DB.tamamlananlar || [];
+  if(a.bas) data = data.filter(function(s){ return s.tarih>=a.bas && s.tarih<=a.bit; });
+  return data.reduce(function(s,x){ return s+(parseFloat(x.km_fark)||0); }, 0);
+}
+
+// Belirli dönemde toplam bakım maliyeti (TL)
+function kutuBakimMaliyet(mod) {
+  var a = donemAralik(mod);
+  var data = DB.bakimlar || [];
+  if(a.bas) data = data.filter(function(b){ return b.tarih>=a.bas && b.tarih<=a.bit; });
+  return data.reduce(function(s,b){ return s+(b.maliyet||0); }, 0);
+}
+
+// Belirli dönemde toplam nakliye maliyeti (TL)
+function kutuNakliyeMaliyet(mod) {
+  var a = donemAralik(mod);
+  var data = DB.nakliyeler || [];
+  if(a.bas) data = data.filter(function(n){ return n.tarih>=a.bas && n.tarih<=a.bit; });
+  return data.reduce(function(s,n){ return s+(n.fiyat||0); }, 0);
+}
+
+// Dönem filtreli kayıtları döndürür
+function donemFiltre(arr, mod, alan) {
+  var a = donemAralik(mod);
+  if(!a.bas) return arr.slice();
+  alan = alan || "tarih";
+  return arr.filter(function(x){ return x[alan]>=a.bas && x[alan]<=a.bit; });
+}
+// Bir alanı bir anahtara göre gruplar → [{etiket,deger}] (azalan)
+function grupla(kayitlar, anahtarFn, degerFn) {
+  var g = {};
+  kayitlar.forEach(function(k){
+    var key = anahtarFn(k) || "Diğer";
+    g[key] = (g[key]||0) + (degerFn(k)||0);
+  });
+  return Object.keys(g).map(function(k){ return {etiket:k, deger:g[k]}; })
+    .filter(function(x){ return x.deger>0; })
+    .sort(function(a,b){ return b.deger-a.deger; });
+}
+// Donut için yüzde ekler
+function yuzdele(veriler) {
+  var t = veriler.reduce(function(a,x){ return a+x.deger; }, 0);
+  return veriler.map(function(x){ return {etiket:x.etiket, deger:x.deger, yuzde:t>0?Math.round(x.deger/t*100):0}; });
+}
+
 function renderKPI() {
   var filtreMod = window.KPI_MOD || "bugun";
   var filtreSofor = window.KPI_SOFOR || "Tümü";
@@ -1120,6 +1176,7 @@ function renderKPI() {
     {etiket:"Tamamlanamadı", deger:isOlmadi},
     {etiket:"Bekliyor", deger:isBekleyen}
   ].filter(function(x){ return x.deger>0; });
+  window.KPI_isDurum = isDurumVeri;
   // Elle girilen KPI'lar (oturum boyunca saklanır)
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
   var dash = window.KPI_DASH;
@@ -1167,41 +1224,21 @@ function renderKPI() {
         <div class="dash-grid">
 
           <div class="dash-sol">
-            <!-- ÜST SATIR: 3 panel -->
-            <div class="dash-row3">
-              <div class="dash-panel"><div class="dash-panel-bas">💰 Maliyet Kırılımı</div>${(tTutar+nakliyeMaliyet+bakimMaliyet)>0?`<div style="display:flex;align-items:center;gap:12px"><canvas id="dash-maliyet-pie" width="150" height="150"></canvas><div id="dash-maliyet-pie-legend" style="flex:1;font-size:12px"></div></div>`:`<div class="dash-panel-bos">veri yok</div>`}</div>
-              <div class="dash-panel" style="grid-column:span 2"><div class="dash-panel-bas">⛽ Yakıt Maliyeti (Son 12 Ay)</div><canvas id="dash-yakit-trend" width="640" height="200" style="width:100%;height:200px"></canvas></div>
-            </div>
-            <!-- ORTA SATIR: 2 geniş panel -->
-            <div class="dash-row2">
-              <div class="dash-panel"><div class="dash-panel-bas">🚗 Araç Bazlı KM Yakıt Gideri (TL/km)</div><canvas id="dash-arac-tlkm" width="320" height="240" style="width:100%;height:240px"></canvas></div>
-              <div class="dash-panel"><div class="dash-panel-bas">🔧 Aylık Bakım Maliyeti (Son 12 Ay)</div><canvas id="dash-bakim-trend" width="320" height="240" style="width:100%;height:240px"></canvas></div>
-            </div>
-            <!-- ALT SATIR: 3 panel -->
-            <div class="dash-row3">
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 6</div><div class="dash-panel-bos">boş</div></div>
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 7</div><div class="dash-panel-bos">boş</div></div>
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 8</div><div class="dash-panel-bos">boş</div></div>
-            </div>
+            ${kategoriPanelleri(window.KPI_AKTIF||"sefer")}
           </div>
 
           <div class="dash-kpi-kolon">
-            <div class="dash-kpi-kart" style="background:#26a69a">
-              <div class="dash-kpi-no">🚛 TOPLAM SEFER</div>
-              <div class="dash-kpi-val">${kutuSeferSayisi(window.KPI_KUTU1_MOD||filtreMod)}</div>
-              <div class="dash-kpi-filtre">
-                ${["bugun","hafta","ay","yil","tumu"].map(function(m){
-                  var ad = m==="bugun"?"Bugün":m==="hafta"?"Hafta":m==="ay"?"Ay":m==="yil"?"Yıl":"Tümü";
-                  var aktif = (window.KPI_KUTU1_MOD||filtreMod)===m;
-                  return '<button onclick="kutu1Mod(&quot;'+m+'&quot;)" style="padding:3px 7px;border-radius:6px;border:none;cursor:pointer;font-size:9px;font-weight:600;background:'+(aktif?"rgba(255,255,255,0.35)":"rgba(255,255,255,0.12)")+';color:#fff">'+ad+'</button>';
-                }).join("")}
-              </div>
-            </div>
-            <div class="dash-kpi-kart" style="background:#4dd0e1"><div class="dash-kpi-no">KPI 2</div><div class="dash-kpi-val">—</div></div>
-            <div class="dash-kpi-kart" style="background:#42a5f5"><div class="dash-kpi-no">KPI 3</div><div class="dash-kpi-val">—</div></div>
-            <div class="dash-kpi-kart" style="background:#7e57c2"><div class="dash-kpi-no">KPI 4</div><div class="dash-kpi-val">—</div></div>
-            <div class="dash-kpi-kart" style="background:#5e35b1"><div class="dash-kpi-no">KPI 5</div><div class="dash-kpi-val">—</div></div>
-            <div class="dash-kpi-kart" style="background:#ab47bc"><div class="dash-kpi-no">KPI 6</div><div class="dash-kpi-val">—</div></div>
+            ${[
+              {tip:"sefer",   renk:"#26a69a", ikon:"🚛", ad:"TOPLAM SEFER",     val:kutuSeferSayisi(filtreMod).toLocaleString("tr-TR")},
+              {tip:"yuk",     renk:"#4dd0e1", ikon:"📦", ad:"TOPLAM KG",        val:kutuToplamYuk(filtreMod).toLocaleString("tr-TR")},
+              {tip:"km",      renk:"#42a5f5", ikon:"🛣️", ad:"TOPLAM KM",        val:kutuToplamKm(filtreMod).toLocaleString("tr-TR")},
+              {tip:"yakit",   renk:"#7e57c2", ikon:"⛽", ad:"YAKIT MALİYETİ",   val:kutuYakitMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"},
+              {tip:"bakim",   renk:"#5e35b1", ikon:"🔧", ad:"BAKIM MALİYETİ",   val:kutuBakimMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"},
+              {tip:"nakliye", renk:"#ab47bc", ikon:"🚚", ad:"NAKLİYE MALİYETİ", val:kutuNakliyeMaliyet(filtreMod).toLocaleString("tr-TR")+" TL"}
+            ].map(function(k){
+              var secili = (window.KPI_AKTIF||"sefer")===k.tip;
+              return '<div onclick="kpiAktifSec(&quot;'+k.tip+'&quot;)" class="dash-kpi-kart" style="background:'+k.renk+';cursor:pointer;'+(secili?"box-shadow:0 0 0 3px #fff, 0 4px 14px rgba(0,0,0,0.4)":"opacity:0.78")+'"><div class="dash-kpi-no">'+k.ikon+' '+k.ad+'</div><div class="dash-kpi-val">'+k.val+'</div></div>';
+            }).join("")}
           </div>
 
         </div>
@@ -1212,65 +1249,93 @@ function renderKPI() {
     <div style="height:20px"></div>
   `);
   document.getElementById("content").classList.add("kpi-genis");
-  setTimeout(()=>kpiGrafikleriCiz(soforKm, soforBek, tKm, tBek), 150);
-  // Yeni mor-turkuaz dashboard grafikleri
-  setTimeout(function(){
-    // Aylık trendler
-    cizAlanGrafik("dash-km-trend", aylikSeri("km",6), "#b39ddb", "rgba(126,87,194,0.35)");
-    cizAlanGrafik("dash-yakit-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
-    // Araç bazlı km yakıt gideri (TL/km) = tüketim/100 × güncel litre fiyatı
-    var lfDash = parseFloat(DB.litreFiyati)||0;
-    var aracTlKm = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; })
-      .map(function(a){ return {etiket:a.plaka, deger:Math.round(parseFloat(a.tuketim)/100*lfDash*100)/100}; })
-      .sort(function(a,b){ return b.deger-a.deger; });
-    if(aracTlKm.length>0 && lfDash>0) cizYatayBar("dash-arac-tlkm", aracTlKm, "#7e57c2");
-    cizAlanGrafik("dash-bakim-trend", aylikSeri("bakim",12), "#ce93d8", "rgba(186,104,200,0.40)");
-    cizAlanGrafik("dash-maliyet-trend", aylikSeri("maliyet",6), "#4db6ac", "rgba(38,166,154,0.30)");
-    // Maliyet kırılımı donut
-    var mToplam = tTutar+nakliyeMaliyet+bakimMaliyet;
-    if(mToplam>0) {
-      var mVeri = [
-        {etiket:"Yakıt", deger:tTutar, yuzde:Math.round(tTutar/mToplam*100)},
-        {etiket:"Nakliye", deger:nakliyeMaliyet, yuzde:Math.round(nakliyeMaliyet/mToplam*100)},
-        {etiket:"Bakım", deger:bakimMaliyet, yuzde:Math.round(bakimMaliyet/mToplam*100)}
-      ].filter(function(x){ return x.deger>0; });
-      cizPastaGrafik("dash-maliyet-pie","dash-maliyet-pie-legend", mVeri, ["#7e57c2","#26a69a","#ab47bc"]);
-    }
-    // Araç KM dağılımı donut
-    var aKeys = Object.keys(aracKm);
-    if(aKeys.length>0) {
-      var aToplam = aKeys.reduce(function(a,k){ return a+aracKm[k]; },0);
-      var aVeri = aKeys.map(function(k){ return {etiket:k, deger:aracKm[k], yuzde:aToplam>0?Math.round(aracKm[k]/aToplam*100):0}; })
-        .sort(function(a,b){ return b.deger-a.deger; });
-      cizPastaGrafik("dash-arac-pie","dash-arac-pie-legend", aVeri, ["#7e57c2","#26a69a","#42a5f5","#ab47bc","#ffa726","#66bb6a"]);
-    }
-    // Yük kategorisi donut
-    var yKeys = Object.keys(yukKat).filter(function(k){ return yukKat[k]>0; });
-    if(yKeys.length>0) {
-      var yTop = yKeys.reduce(function(a,k){ return a+yukKat[k]; },0);
-      var yVeri = yKeys.map(function(k){ return {etiket:k, deger:yukKat[k], yuzde:yTop>0?Math.round(yukKat[k]/yTop*100):0}; }).sort(function(a,b){ return b.deger-a.deger; });
-      cizPastaGrafik("dash-yuk-pie","dash-yuk-pie-legend", yVeri, ["#42a5f5","#7e57c2","#26a69a","#ffa726","#ab47bc","#66bb6a"]);
-    }
-    // İş durumu donut
-    if(isDurumVeri.length>0) {
-      var iTop = isDurumVeri.reduce(function(a,x){ return a+x.deger; },0);
-      var iVeri = isDurumVeri.map(function(x){ return {etiket:x.etiket, deger:x.deger, yuzde:iTop>0?Math.round(x.deger/iTop*100):0}; });
-      cizPastaGrafik("dash-is-pie","dash-is-pie-legend", iVeri, ["#66bb6a","#ef5350","#ffa726"]);
-    }
-    // Şoför bazında KM (yatay bar)
-    var sKeys = Object.keys(soforKm);
-    if(sKeys.length>0) {
-      var sVeri = sKeys.map(function(k){ return {etiket:k, deger:soforKm[k]}; }).sort(function(a,b){ return b.deger-a.deger; });
-      cizYatayBar("dash-sofor-bar", sVeri, "#7e57c2");
-    }
-    // Aylık sefer sayısı (dikey bar)
-    cizDikeyBar("dash-sefer-bar", aylikSeri("sefer",6), "#42a5f5");
-  }, 180);
+  setTimeout(function(){ kategoriCiz(window.KPI_AKTIF||"sefer", filtreMod); }, 180);
+}
+
+// Aktif kategoriye göre sol panelleri çizer
+function kategoriCiz(aktif, mod) {
+  var palet = ["#7e57c2","#26a69a","#42a5f5","#ab47bc","#ffa726","#66bb6a","#ef5350","#4dd0e1"];
+  if(aktif==="sefer") {
+    cizDikeyBar("kp-trend", aylikSeri("sefer",12), "#26a69a");
+    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(){return 1;}), "#26a69a");
+    cizYatayBar("kp-arac", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.plaka;}, function(){return 1;}), "#26a69a");
+    cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(window.KPI_isDurum||[]), ["#66bb6a","#ef5350","#ffa726"]);
+  } else if(aktif==="yuk") {
+    cizDikeyBar("kp-trend", aylikSeriYuk(12), "#4dd0e1");
+    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(s){return parseFloat(s.yuk_miktari)||0;}), "#4dd0e1");
+    cizYatayBar("kp-arac", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.plaka;}, function(s){return parseFloat(s.yuk_miktari)||0;}), "#4dd0e1");
+  } else if(aktif==="km") {
+    cizDikeyBar("kp-trend", aylikSeri("km",12), "#42a5f5");
+    cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.plaka;}, function(s){return parseFloat(s.km_fark)||0;})), palet);
+    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(s){return parseFloat(s.km_fark)||0;}), "#42a5f5");
+  } else if(aktif==="yakit") {
+    cizAlanGrafik("kp-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
+    cizYatayBar("kp-arac", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.plaka;}, function(y){return y.tutar||0;}), "#7e57c2");
+    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.sofor;}, function(y){return y.tutar||0;}), "#7e57c2");
+  } else if(aktif==="bakim") {
+    cizAlanGrafik("kp-trend", aylikSeri("bakim",12), "#ce93d8", "rgba(186,104,200,0.40)");
+    cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(grupla(donemFiltre(DB.bakimlar||[],mod), function(b){return b.tur||"Diğer";}, function(b){return b.maliyet||0;})), palet);
+    cizYatayBar("kp-arac", grupla(donemFiltre(DB.bakimlar||[],mod), function(b){return b.plaka;}, function(b){return b.maliyet||0;}), "#5e35b1");
+  } else if(aktif==="nakliye") {
+    cizAlanGrafik("kp-trend", aylikSeri("nakliye",12), "#4db6ac", "rgba(38,166,154,0.40)");
+    cizYatayBar("kp-arac", grupla(donemFiltre(DB.nakliyeler||[],mod), function(n){return n.sevk_adresi||"Diğer";}, function(n){return n.fiyat||0;}), "#ab47bc");
+  }
 }
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
+
+// Tıklanan KPI kartına göre aktif kategoriyi değiştirir
+function kpiAktifSec(tip) { window.KPI_AKTIF=tip; renderKPI(); }
+
+// Aylık yük serisi (kg)
+function aylikSeriYuk(ayN) {
+  var simdi=new Date(), aylar=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"], sonuc=[];
+  for(var k=ayN-1;k>=0;k--){
+    var d=new Date(simdi.getFullYear(),simdi.getMonth()-k,1);
+    var onek=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    var deger=(DB.tamamlananlar||[]).filter(function(s){return s.tarih&&s.tarih.startsWith(onek);}).reduce(function(a,s){return a+(parseFloat(s.yuk_miktari)||0);},0);
+    sonuc.push({label:aylar[d.getMonth()], deger:deger});
+  }
+  return sonuc;
+}
+
+// Aktif kategoriye göre sol panel HTML'ini üretir
+function kategoriPanelleri(aktif) {
+  var basliklar = {
+    sefer:   {trend:"📈 Aylık Sefer Sayısı", sofor:"👤 Şoför Bazında Sefer", arac:"🚗 Araç Bazında Sefer", pie:"✅ İş Durumu"},
+    yuk:     {trend:"📈 Aylık Yük (kg)", sofor:"👤 Şoför Bazında Yük", arac:"🚗 Araç Bazında Yük", pie:""},
+    km:      {trend:"📈 Aylık KM", sofor:"👤 Şoför Bazında KM", arac:"", pie:"🚗 Araç KM Dağılımı"},
+    yakit:   {trend:"📈 Aylık Yakıt Maliyeti", sofor:"👤 Şoför Bazında Yakıt", arac:"🚗 Araç Bazında Yakıt", pie:""},
+    bakim:   {trend:"📈 Aylık Bakım Maliyeti", sofor:"", arac:"🚗 Araç Bazında Bakım", pie:"🔧 Bakım Türü Dağılımı"},
+    nakliye: {trend:"📈 Aylık Nakliye Maliyeti", sofor:"", arac:"📍 Sevk Adresine Göre Nakliye", pie:""}
+  };
+  var b = basliklar[aktif] || basliklar.sefer;
+  function panel(baslik, id, tip, h, genis) {
+    if(!baslik) return "";
+    h = h || 200;
+    var span = genis ? ' style="grid-column:span 2"' : '';
+    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;gap:12px;min-height:150px"><canvas id="'+id+'" width="'+(genis?320:150)+'" height="170"></canvas><div id="'+id+'-legend" style="flex:1;font-size:12px"></div></div></div>';
+    return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><canvas id="'+id+'" width="640" height="'+h+'" style="width:100%;height:'+h+'px"></canvas></div>';
+  }
+  // Üst sıra: geniş trend grafiği
+  var ust = '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.trend,"kp-trend","trend",220)+'</div>';
+  var alt;
+  if(aktif==="sefer") {
+    // Sefer: Araç + Şoför yan yana, altında İş Durumu 2 blok geniş
+    alt = '<div class="dash-row2">'+panel(b.arac,"kp-arac","bar",240)+panel(b.sofor,"kp-sofor","bar",240)+'</div>'
+        + '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.pie,"kp-pie","pie",0,true)+'</div>';
+  } else {
+    var altPaneller = [panel(b.pie,"kp-pie","pie"), panel(b.sofor,"kp-sofor","bar",240), panel(b.arac,"kp-arac","bar",240)].filter(function(x){return x;});
+    alt = '<div class="dash-row2">'+altPaneller.join("")+'</div>';
+  }
+  return ust+alt;
+}
 function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
 function kutu2Mod(mod) { window.KPI_KUTU2_MOD=mod; renderKPI(); }
+function kutu3Mod(mod) { window.KPI_KUTU3_MOD=mod; renderKPI(); }
+function kutu4Mod(mod) { window.KPI_KUTU4_MOD=mod; renderKPI(); }
+function kutu5Mod(mod) { window.KPI_KUTU5_MOD=mod; renderKPI(); }
+function kutu6Mod(mod) { window.KPI_KUTU6_MOD=mod; renderKPI(); }
 
 async function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
@@ -1441,6 +1506,8 @@ function aylikSeri(tip, ayN) {
       deger = (DB.yakitlar||[]).filter(function(y){ return y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.tutar||0); },0);
     } else if(tip==="bakim") {
       deger = (DB.bakimlar||[]).filter(function(b){ return b.tarih && b.tarih.startsWith(onek); }).reduce(function(a,b){ return a+(b.maliyet||0); },0);
+    } else if(tip==="nakliye") {
+      deger = (DB.nakliyeler||[]).filter(function(nk){ return nk.tarih && nk.tarih.startsWith(onek); }).reduce(function(a,nk){ return a+(nk.fiyat||0); },0);
     }
     sonuc.push({label:aylarKisa[ay], deger:Math.round(deger)});
   }
