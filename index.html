@@ -1696,6 +1696,80 @@ function miniTrendPNG(noktalar, renk) {
   return cv.toDataURL("image/png");
 }
 
+// Bir grafiği gizli canvas'a çizip PNG dataURL döndürür (Excel'e gömmek için)
+function grafikPng(cizFn, w, h) {
+  var cv = document.createElement("canvas");
+  cv.width = w; cv.height = h;
+  document.body.appendChild(cv);
+  var ctx = cv.getContext("2d");
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,w,h);
+  try { cizFn(ctx, w, h); } catch(e) {}
+  var url = cv.toDataURL("image/png");
+  document.body.removeChild(cv);
+  return url;
+}
+// Excel donut grafiği (beyaz zemin, koyu yazı)
+function xlsPasta(ctx, W, H, veriler, renkler) {
+  var toplam = veriler.reduce(function(a,v){return a+v.deger;},0);
+  if(toplam===0) return;
+  var lejW = 150;
+  var cx = (W-lejW)/2, cy = H/2, r = Math.min(W-lejW,H)/2 - 10;
+  var aci = -Math.PI/2, dilimler=[];
+  veriler.forEach(function(v,i){
+    var d = v.deger/toplam*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,aci,aci+d); ctx.closePath();
+    ctx.fillStyle = renkler[i%renkler.length]; ctx.fill();
+    ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke();
+    dilimler.push({orta:aci+d/2, yuzde:Math.round(v.deger/toplam*100)});
+    aci += d;
+  });
+  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fill();
+  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="bold 13px Arial"; ctx.fillStyle="#222";
+  dilimler.forEach(function(s){ if(s.yuzde<5) return; var x=cx+Math.cos(s.orta)*r*0.78, y=cy+Math.sin(s.orta)*r*0.78; ctx.fillStyle="#fff"; ctx.fillText(s.yuzde+"%",x,y); });
+  // Lejant
+  var ly = 20, lx = W-lejW+10;
+  ctx.textAlign="left"; ctx.font="12px Arial";
+  veriler.forEach(function(v,i){
+    ctx.fillStyle=renkler[i%renkler.length]; ctx.fillRect(lx,ly,12,12);
+    ctx.fillStyle="#222"; ctx.fillText(v.etiket+"  %"+Math.round(v.deger/toplam*100), lx+18, ly+6);
+    ly += 22;
+  });
+}
+// Excel dikey bar (beyaz zemin)
+function xlsDikeyBar(ctx, W, H, noktalar, renk) {
+  if(!noktalar||!noktalar.length) return;
+  var padL=40, padR=15, padT=25, padB=30;
+  var max = Math.max.apply(null, noktalar.map(function(n){return n.deger;})); if(max===0) max=1;
+  var n = noktalar.length, bw = (W-padL-padR)/n*0.6, gap=(W-padL-padR)/n;
+  ctx.strokeStyle="#ddd"; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  noktalar.forEach(function(nt,i){
+    var x = padL + i*gap + (gap-bw)/2;
+    var bh = (nt.deger/max)*(H-padT-padB);
+    ctx.fillStyle=renk; ctx.fillRect(x, H-padB-bh, bw, bh);
+    ctx.fillStyle="#222"; ctx.textAlign="center"; ctx.font="9px Arial";
+    if(nt.deger>0) ctx.fillText(nt.deger>=1000?(nt.deger/1000).toFixed(1)+"k":nt.deger, x+bw/2, H-padB-bh-5);
+    ctx.fillStyle="#888"; ctx.fillText(nt.label, x+bw/2, H-padB+14);
+  });
+}
+// Excel yatay bar (beyaz zemin)
+function xlsYatayBar(ctx, W, H, veriler, renk) {
+  if(!veriler||!veriler.length) return;
+  veriler = veriler.slice(0,8);
+  var padL=110, padR=50, padT=10, padB=10;
+  var max = Math.max.apply(null, veriler.map(function(v){return v.deger;})); if(max===0) max=1;
+  var n=veriler.length, bh=(H-padT-padB)/n*0.65, gap=(H-padT-padB)/n;
+  veriler.forEach(function(v,i){
+    var y = padT + i*gap + (gap-bh)/2;
+    var bw = (v.deger/max)*(W-padL-padR);
+    ctx.fillStyle="#222"; ctx.textAlign="right"; ctx.font="11px Arial"; ctx.textBaseline="middle";
+    ctx.fillText(String(v.etiket).slice(0,16), padL-8, y+bh/2);
+    ctx.fillStyle=renk; ctx.fillRect(padL, y, bw, bh);
+    ctx.fillStyle="#222"; ctx.textAlign="left";
+    ctx.fillText(v.deger.toLocaleString("tr-TR"), padL+bw+6, y+bh/2);
+  });
+}
+
 async function kpiRaporExcel() {
   // Dönem filtresini renderKPI ile aynı mantıkla hesapla
   var filtreMod = window.KPI_MOD || "bugun";
@@ -1755,154 +1829,33 @@ async function kpiRaporExcel() {
   var ince={style:"thin",color:{argb:"FFBFBFBF"}};
   function num(c,fmt){ c.numFmt=fmt; }
 
-  var wb = new ExcelJS.Workbook();
-  var ws = wb.addWorksheet("KPI Raporu", {views:[{showGridLines:false}]});
-
-  ws.getColumn(1).width = 3;
-  var KOL = 6; // B..G veri sütunları
-  for(var i=0;i<KOL;i++) ws.getColumn(i+2).width = 16;
-
-  var R = 1;
-  ws.getRow(R).height = 8; R++;
-
-  // ── Başlık ──
-  ws.getRow(R).height = 38; ws.mergeCells(R,2,R,2+KOL-1);
-  var h1=ws.getCell(R,2); h1.value="KÜÇÜKER LOJİSTİK";
-  h1.font={name:"Arial",bold:true,size:18,color:{argb:BEYAZ}}; h1.fill={type:"pattern",pattern:"solid",fgColor:{argb:KOYU}}; h1.alignment={horizontal:"center",vertical:"middle"}; R++;
-  ws.getRow(R).height=24; ws.mergeCells(R,2,R,2+KOL-1);
-  var h2=ws.getCell(R,2); h2.value="PERFORMANS (KPI) RAPORU";
-  h2.font={name:"Arial",bold:true,size:13,color:{argb:KOYU}}; h2.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; h2.alignment={horizontal:"center",vertical:"middle"}; R++;
-  ws.getRow(R).height=18; ws.mergeCells(R,2,R,4);
-  var d1=ws.getCell(R,2); d1.value="Dönem: "+donemAd+" ("+donemMetni+")";
-  d1.font={name:"Arial",size:10,italic:true,color:{argb:"FF555555"}}; d1.alignment={horizontal:"left",vertical:"middle"};
-  ws.mergeCells(R,5,R,2+KOL-1);
-  var d2=ws.getCell(R,5); d2.value="Rapor Tarihi: "+raporTarih;
-  d2.font={name:"Arial",size:10,italic:true,color:{argb:"FF555555"}}; d2.alignment={horizontal:"right",vertical:"middle"}; R++;
-  ws.getRow(R).height=6; R++;
-
-  // ── KPI özet kutuları (6 adet, 3'er) ──
-  var kpiler = [
-    {b:"TOPLAM SEFER", d:tSefer+" sefer"},
-    {b:"TOPLAM KM", d:tKm.toLocaleString("tr-TR")+" km"},
-    {b:"TOPLAM YÜK", d:tYuk.toLocaleString("tr-TR")},
-    {b:"TOPLAM MALİYET", d:toplamMaliyet.toLocaleString("tr-TR")+" TL"},
-    {b:"KM BİRİM MALİYET", d:(kmBirim>0?kmBirim.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—")+" TL/km"},
-    {b:"FAZLA MESAİ", d:mesaiSaat+" saat"},
-    {b:"PLAN GERÇEKLEŞEN UYUM", d:planUyum!==null?planUyum+"%":"—"},
-    {b:"İŞ KAZASI", d:(isKazasi!==""?isKazasi:"—")+" adet"},
-    {b:"ORT. YAKIT FİYATI", d:(yakitLitre>0?(yakitTutar/yakitLitre).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):"—")+" TL/lt"}
-  ];
-  for(var ki=0; ki<kpiler.length; ki+=3){
-    var bRow=R, dRow=R+1;
-    ws.getRow(bRow).height=20; ws.getRow(dRow).height=24;
-    for(var j=0;j<3 && (ki+j)<kpiler.length;j++){
-      var k=kpiler[ki+j], c1=2+j*2, c2=c1+1;
-      ws.mergeCells(bRow,c1,bRow,c2);
-      var bc=ws.getCell(bRow,c1); bc.value=k.b;
-      bc.font={name:"Arial",bold:true,size:9,color:{argb:ACIK}}; bc.fill={type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}}; bc.alignment={horizontal:"center",vertical:"middle",wrapText:true};
-      ws.mergeCells(dRow,c1,dRow,c2);
-      var dc=ws.getCell(dRow,c1); dc.value=k.d;
-      dc.font={name:"Arial",bold:true,size:12,color:{argb:BEYAZ}}; dc.fill={type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}}; dc.alignment={horizontal:"center",vertical:"middle"};
-    }
-    R+=2; ws.getRow(R).height=4; R++;
-  }
-  R++;
-
-  // n veri sütununu KOL fiziksel sütuna dengeli dağıtır → her sütun için [c1,c2]
-  function sutunSinirlari(n){
-    var taban = Math.floor(KOL/n), artan = KOL%n;
-    var sonuc=[], cur=2;
-    for(var i=0;i<n;i++){
-      var gen = taban + (i<artan?1:0);
-      sonuc.push([cur, cur+gen-1]);
-      cur += gen;
-    }
-    return sonuc;
-  }
-  function tabloBaslik(metin){
-    ws.getRow(R).height=22; ws.mergeCells(R,2,R,2+KOL-1);
-    var c=ws.getCell(R,2); c.value=metin;
-    c.font={name:"Arial",bold:true,size:12,color:{argb:KOYU}}; c.alignment={horizontal:"left",vertical:"middle"}; R++;
-  }
-  function basliklar(arr){
-    ws.getRow(R).height=20;
-    var sin = sutunSinirlari(arr.length);
-    arr.forEach(function(h,i){
-      var c1=sin[i][0], c2=sin[i][1];
-      if(c2>c1) ws.mergeCells(R,c1,R,c2);
-      var c=ws.getCell(R,c1); c.value=h;
-      c.font={name:"Arial",bold:true,size:10,color:{argb:BEYAZ}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:LACIVERT}};
-      c.alignment={horizontal:"center",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
-    });
-    R++;
-  }
-  function satir(vals, idx, fmtMap, sariMi){
-    ws.getRow(R).height=18;
-    var sin = sutunSinirlari(vals.length);
-    vals.forEach(function(val,i){
-      var c1=sin[i][0], c2=sin[i][1];
-      if(c2>c1) ws.mergeCells(R,c1,R,c2);
-      var c=ws.getCell(R,c1); c.value=val;
-      if(sariMi){ c.font={name:"Arial",bold:true,size:10,color:{argb:KOYU}}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; }
-      else { c.font={name:"Arial",size:10,color:{argb:"FF222222"}}; if(idx%2===1) c.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}}; }
-      c.alignment={horizontal:i===0?"left":"center",vertical:"middle"};
-      c.border={top:ince,bottom:ince,left:ince,right:ince};
-      if(fmtMap&&fmtMap[i]) c.numFmt=fmtMap[i];
-    });
-    R++;
-  }
-
-  // ── Maliyet kırılımı tablosu ──
-  var malTabloRow = R; // başlık satırı
-  tabloBaslik("MALİYET KIRILIMI");
-  basliklar(["Kalem","Tutar (TL)","Oran"]);
-  var maliyetSatir=[["Yakıt",yakitTutar],["Nakliye",nakTutar],["Bakım",bakTutar]];
-  maliyetSatir.forEach(function(m,idx){
-    var oran = toplamMaliyet>0?Math.round(m[1]/toplamMaliyet*100)+"%":"0%";
-    satir([m[0], m[1], oran], idx, {1:"#,##0.00"});
-  });
-  satir(["TOPLAM", toplamMaliyet, "100%"], 0, {1:"#,##0.00"}, true);
-  ws.getRow(R).height=6; R++;
-
-  // ── Araç bazlı KM ──
+  // ── Dashboard için veri paketi hazırla ──
+  var palet = ["#7e57c2","#26a69a","#42a5f5","#ab47bc","#ffa726","#66bb6a","#ef5350","#4dd0e1"];
   var aKeys=Object.keys(aracKm).sort(function(a,b){return aracKm[b]-aracKm[a];});
-  if(aKeys.length>0){
-    tabloBaslik("ARAÇ BAZLI KM");
-    basliklar(["Plaka","KM","Oran"]);
-    aKeys.forEach(function(p,idx){
-      var oran=tKm>0?Math.round(aracKm[p]/tKm*100)+"%":"0%";
-      satir([p, aracKm[p], oran], idx, {1:"#,##0"});
-    });
-    ws.getRow(R).height=6; R++;
-  }
-
-  // ── Şoför bazlı KM ──
   var sKeys=Object.keys(soforKm).sort(function(a,b){return soforKm[b]-soforKm[a];});
-  if(sKeys.length>0){
-    tabloBaslik("ŞOFÖR BAZLI KM");
-    basliklar(["Şoför","KM","Oran"]);
-    sKeys.forEach(function(p,idx){
-      var oran=tKm>0?Math.round(soforKm[p]/tKm*100)+"%":"0%";
-      satir([p, soforKm[p], oran], idx, {1:"#,##0"});
-    });
-    ws.getRow(R).height=6; R++;
-  }
+  var nakGrup={}; nakliyeler.forEach(function(n){ var k=n.sevk_adresi||"Diğer"; nakGrup[k]=(nakGrup[k]||0)+(n.fiyat||0); });
+  var dashVeri = {
+    donemMetni: donemAd+" ("+donemMetni+")",
+    tSefer: tSefer, tYuk: tYuk, tKm: tKm,
+    yakitTutar: yakitTutar, bakTutar: bakTutar, nakTutar: nakTutar,
+    maliyetVeri: [{etiket:"Yakıt",deger:yakitTutar},{etiket:"Nakliye",deger:nakTutar},{etiket:"Bakım",deger:bakTutar}].filter(function(z){return z.deger>0;}),
+    kmSeri: aylikSeri("km",12),
+    yakitSeri: aylikSeri("yakit",12),
+    isVeri: [{etiket:"Tamamlandı",deger:isTamam},{etiket:"Tamamlanamadı",deger:isOlmadi},{etiket:"Bekliyor",deger:isler.filter(function(i){return !i.durum||i.durum==="Bekliyor";}).length}].filter(function(z){return z.deger>0;}),
+    aracVeri: aKeys.map(function(p){return {etiket:p,deger:aracKm[p]};}),
+    soforVeri: sKeys.map(function(p){return {etiket:p,deger:soforKm[p]};}),
+    nakliyeVeri: Object.keys(nakGrup).map(function(k){return {etiket:k,deger:nakGrup[k]};}).sort(function(a,b){return b.deger-a.deger;})
+  };
 
-  // ── Aylık trend (son 6 ay) ──
-  var trendTabloRow = R;
-  tabloBaslik("AYLIK TREND (Son 6 Ay)");
-  basliklar(["Ay","KM","Maliyet (TL)"]);
-  var kmSeri=aylikSeri("km",6), malSeri=aylikSeri("maliyet",6);
-  kmSeri.forEach(function(m,idx){
-    satir([m.label, m.deger, malSeri[idx]?malSeri[idx].deger:0], idx, {1:"#,##0",2:"#,##0"});
-  });
+  // ── Dashboard'ı tek resim olarak çiz ──
+  var dashPng = dashboardResimCiz(dashVeri);
 
-  // ── Sütunları eşit ve dengeli genişlikte yap (tam genişlik, sağda boşluk yok) ──
-  for(var col=2; col<=2+KOL-1; col++){
-    ws.getColumn(col).width = 17;
-  }
-
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet("KPI Dashboard", {views:[{showGridLines:false}]});
+  // Resmi sayfaya tam genişlikte göm
   try {
+    var imgId = wb.addImage({base64: dashPng.split(",")[1], extension:"png"});
+    ws.addImage(imgId, {tl:{col:0,row:0}, ext:{width:1320, height:760}});
     var buffer = await wb.xlsx.writeBuffer();
     var blob = new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
     var url = URL.createObjectURL(blob);
@@ -1915,6 +1868,99 @@ async function kpiRaporExcel() {
   } catch(e) {
     showToast("Hata: "+(e.message||"rapor oluşturulamadı"),"error");
   }
+}
+
+// ═══════════ TEK PARÇA DASHBOARD ÇİZİMİ (Excel'e gömmek için) ═══════════
+function dashboardResimCiz(d) {
+  // d: tüm hesaplanmış veriler
+  var W=1320, H=760;
+  var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  document.body.appendChild(cv);
+  var x=cv.getContext("2d");
+
+  // Arka plan
+  x.fillStyle="#f4f2f9"; x.fillRect(0,0,W,H);
+
+  // ── Yardımcılar ──
+  function rrect(px,py,pw,ph,r,renk){ x.fillStyle=renk; x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+pw,py,px+pw,py+ph,r); x.arcTo(px+pw,py+ph,px,py+ph,r); x.arcTo(px,py+ph,px,py,r); x.arcTo(px,py,px+pw,py,r); x.closePath(); x.fill(); }
+  function panel(px,py,pw,ph,baslik){ rrect(px,py,pw,ph,10,"#ffffff"); x.fillStyle="#5a3d8a"; x.font="bold 14px Arial"; x.textAlign="left"; x.textBaseline="top"; x.fillText(baslik,px+14,py+12); }
+  function donut(cx,cy,r,veriler,renkler,lejX,lejY){
+    var top=veriler.reduce(function(a,v){return a+v.deger;},0); if(top===0){ x.fillStyle="#999"; x.textAlign="center"; x.fillText("veri yok",cx,cy); return; }
+    var a=-Math.PI/2;
+    veriler.forEach(function(v,i){ var dd=v.deger/top*Math.PI*2; x.beginPath(); x.moveTo(cx,cy); x.arc(cx,cy,r,a,a+dd); x.closePath(); x.fillStyle=renkler[i%renkler.length]; x.fill(); x.strokeStyle="#fff"; x.lineWidth=2; x.stroke();
+      var mid=a+dd/2, yz=Math.round(v.deger/top*100); if(yz>=5){ x.fillStyle="#fff"; x.font="bold 12px Arial"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(yz+"%",cx+Math.cos(mid)*r*0.7,cy+Math.sin(mid)*r*0.7); } a+=dd; });
+    x.fillStyle="#fff"; x.beginPath(); x.arc(cx,cy,r*0.55,0,Math.PI*2); x.fill();
+    // lejant
+    var ly=lejY; x.textAlign="left"; x.textBaseline="middle"; x.font="12px Arial";
+    veriler.forEach(function(v,i){ x.fillStyle=renkler[i%renkler.length]; x.fillRect(lejX,ly,12,12); x.fillStyle="#333"; x.fillText(v.etiket,lejX+18,ly+6); ly+=22; });
+  }
+  function cizgi(px,py,pw,ph,noktalar,renk){
+    if(!noktalar.length) return; var pad=30, max=Math.max.apply(null,noktalar.map(function(n){return n.deger;}))||1;
+    var n=noktalar.length, sx=(pw-pad*2)/(n-1||1);
+    function gx(i){return px+pad+i*sx;} function gy(v){return py+ph-pad-(v/max)*(ph-pad*1.6);}
+    // alan
+    x.beginPath(); x.moveTo(gx(0),py+ph-pad); noktalar.forEach(function(nt,i){ x.lineTo(gx(i),gy(nt.deger)); }); x.lineTo(gx(n-1),py+ph-pad); x.closePath(); x.fillStyle=renk+"33"; x.fill();
+    x.beginPath(); noktalar.forEach(function(nt,i){ i===0?x.moveTo(gx(i),gy(nt.deger)):x.lineTo(gx(i),gy(nt.deger)); }); x.strokeStyle=renk; x.lineWidth=2.5; x.stroke();
+    noktalar.forEach(function(nt,i){ x.fillStyle=renk; x.beginPath(); x.arc(gx(i),gy(nt.deger),3,0,Math.PI*2); x.fill();
+      x.fillStyle="#333"; x.font="9px Arial"; x.textAlign="center"; x.textBaseline="bottom"; if(nt.deger>0) x.fillText(nt.deger>=1000?(nt.deger/1000).toFixed(1)+"k":nt.deger,gx(i),gy(nt.deger)-4);
+      x.fillStyle="#999"; x.textBaseline="top"; x.fillText(nt.label,gx(i),py+ph-pad+5); });
+  }
+  function yatayBar(px,py,pw,ph,veriler,renk){
+    veriler=veriler.slice(0,6); if(!veriler.length){ x.fillStyle="#999"; x.textAlign="center"; x.fillText("veri yok",px+pw/2,py+ph/2); return; }
+    var max=Math.max.apply(null,veriler.map(function(v){return v.deger;}))||1, n=veriler.length;
+    var gap=(ph-20)/n, bh=gap*0.6, lblW=90;
+    veriler.forEach(function(v,i){ var yy=py+15+i*gap; x.fillStyle="#555"; x.font="11px Arial"; x.textAlign="left"; x.textBaseline="middle"; x.fillText(String(v.etiket).slice(0,12),px+8,yy+bh/2);
+      var bw=(v.deger/max)*(pw-lblW-50); x.fillStyle=renk; rrect(px+lblW,yy,bw,bh,3,renk);
+      x.fillStyle="#333"; x.textAlign="left"; x.fillText(v.deger.toLocaleString("tr-TR"),px+lblW+bw+6,yy+bh/2); });
+  }
+  function kpiKart(px,py,pw,ph,renk,ust,buyuk){ rrect(px,py,pw,ph,8,renk); x.fillStyle="rgba(255,255,255,0.9)"; x.font="bold 12px Arial"; x.textAlign="left"; x.textBaseline="top"; x.fillText(ust,px+16,py+14); x.fillStyle="#fff"; x.font="bold 22px Arial"; x.fillText(buyuk,px+16,py+34); }
+
+  // ── BAŞLIK ŞERİDİ ──
+  rrect(20,20,W-40,70,8,"#4a2d7a");
+  x.fillStyle="#fff"; x.font="bold 30px Arial"; x.textAlign="left"; x.textBaseline="middle"; x.fillText("KÜÇÜKER LOJİSTİK — KPI DASHBOARD",50,55);
+  x.font="13px Arial"; x.textAlign="right"; x.fillText(d.donemMetni,W-50,55);
+
+  // ── SOL GRID (3 sütun x 3 satır benzeri) + SAĞ KPI kartları ──
+  var gx0=20, gy0=105, kartW=270, solW=W-40-kartW-15;
+  var col=(solW-30)/3, rowH=195;
+
+  // Satır 1: Maliyet donut, Aylık KM çizgi (2 birim), 
+  panel(gx0, gy0, col, rowH, "Maliyet Kırılımı");
+  donut(gx0+col*0.32, gy0+rowH/2+10, 55, d.maliyetVeri, ["#7e57c2","#26a69a","#ab47bc"], gx0+col*0.62, gy0+rowH/2-15);
+  panel(gx0+col+15, gy0, col*2+15, rowH, "Aylık KM (Son 12 Ay)");
+  cizgi(gx0+col+15, gy0+25, col*2+15, rowH-30, d.kmSeri, "#7e57c2");
+
+  // Satır 2: Aylık Yakıt çizgi (2 birim), İş Durumu donut
+  var gy1=gy0+rowH+15;
+  panel(gx0, gy1, col*2+15, rowH, "Aylık Yakıt Maliyeti (Son 12 Ay)");
+  cizgi(gx0, gy1+25, col*2+15, rowH-30, d.yakitSeri, "#26a69a");
+  panel(gx0+col*2+30, gy1, col, rowH, "İş Durumu");
+  donut(gx0+col*2+30+col*0.32, gy1+rowH/2+10, 55, d.isVeri, ["#66bb6a","#ef5350","#ffa726"], gx0+col*2+30+col*0.6, gy1+rowH/2-15);
+
+  // Satır 3: Araç KM bar, Şoför KM bar, Nakliye bar
+  var gy2=gy1+rowH+15;
+  panel(gx0, gy2, col, rowH, "Araç Bazlı KM");
+  yatayBar(gx0, gy2+30, col, rowH-35, d.aracVeri, "#42a5f5");
+  panel(gx0+col+15, gy2, col, rowH, "Şoför Bazlı KM");
+  yatayBar(gx0+col+15, gy2+30, col, rowH-35, d.soforVeri, "#7e57c2");
+  panel(gx0+col*2+30, gy2, col, rowH, "Sevk Adresine Göre Nakliye");
+  yatayBar(gx0+col*2+30, gy2+30, col, rowH-35, d.nakliyeVeri, "#ab47bc");
+
+  // ── SAĞ KPI KARTLARI (6 adet) ──
+  var kx=W-20-kartW, ky=gy0, kh=(rowH*3+30-50)/6, gap=10;
+  var kartlar=[
+    {renk:"#26a69a", ust:"🚛 TOPLAM SEFER", val:d.tSefer.toLocaleString("tr-TR")},
+    {renk:"#4dd0e1", ust:"📦 TOPLAM KG", val:d.tYuk.toLocaleString("tr-TR")},
+    {renk:"#42a5f5", ust:"🛣️ TOPLAM KM", val:d.tKm.toLocaleString("tr-TR")},
+    {renk:"#7e57c2", ust:"⛽ YAKIT MALİYETİ", val:d.yakitTutar.toLocaleString("tr-TR")+" TL"},
+    {renk:"#5e35b1", ust:"🔧 BAKIM MALİYETİ", val:d.bakTutar.toLocaleString("tr-TR")+" TL"},
+    {renk:"#ab47bc", ust:"🚚 NAKLİYE MALİYETİ", val:d.nakTutar.toLocaleString("tr-TR")+" TL"}
+  ];
+  kartlar.forEach(function(k,i){ kpiKart(kx, ky+i*(kh+gap), kartW, kh, k.renk, k.ust, k.val); });
+
+  var url=cv.toDataURL("image/png");
+  document.body.removeChild(cv);
+  return url;
 }
 
 function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
