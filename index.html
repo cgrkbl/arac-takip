@@ -330,6 +330,7 @@ let DB = {
   mesailer: [],
   talepler: [],
   nakliyeler: [],
+  kazalar: [],
   litreFiyati: "",
 };
 
@@ -526,7 +527,7 @@ const MENU_GRUPLARI = {
   ana:     [{id:"rapor",label:"📊 KPI"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"},{id:"harita",label:"🗺️ Harita"}],
   yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
-  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"islisteleme",label:"📋 İş Liste"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
+  diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"islisteleme",label:"📋 İş Liste"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"},{id:"kaza",label:"⚠️ İş Kazası"},{id:"kazaliste",label:"📋 Kaza Liste"}],
 };
 
 // "Diğer" menüsü için accordion modül yapısı
@@ -535,6 +536,7 @@ const DIGER_MODULLER = [
   {id:"bakim-mod", ikon:"🔧", baslik:"Bakım", alt:[{id:"bakim",ikon:"➕",label:"Bakım Girişi"},{id:"bakimliste",ikon:"📋",label:"Bakım Listesi"}]},
   {id:"mesai-mod", ikon:"⏰", baslik:"Mesai", alt:[{id:"mesailer",ikon:"➕",label:"Mesai Girişi"},{id:"mesailiste",ikon:"📋",label:"Mesai Listesi"}]},
   {id:"nakliye-mod", ikon:"🚚", baslik:"Nakliye", alt:[{id:"nakliye",ikon:"➕",label:"Nakliye Girişi"},{id:"nakliyeliste",ikon:"📋",label:"Nakliye Listesi"}]},
+  {id:"kaza-mod", ikon:"⚠️", baslik:"İş Kazası", alt:[{id:"kaza",ikon:"➕",label:"Kaza Girişi"},{id:"kazaliste",ikon:"📋",label:"Kaza Listesi"}]},
   {id:"is-mod", ikon:"📋", baslik:"İş Listesi", alt:[{id:"islistesi",ikon:"➕",label:"Yapılacak İş"},{id:"islisteleme",ikon:"📋",label:"İş Listesi"}]},
   {id:"talep-mod", ikon:"🚗", baslik:"Talepler", alt:[{id:"talepler",ikon:"🚗",label:"Araç Talepleri"}]},
 ];
@@ -667,6 +669,8 @@ function tabSec(id) {
     case "talepler":   renderTalepler(); break;
     case "nakliye":    renderNakliye(); break;
     case "nakliyeliste": renderNakliyeListe(); break;
+    case "kaza":       renderKaza(); break;
+    case "kazaliste":  renderKazaListe(); break;
     case "maliyet":    renderMaliyetRaporu(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
     case "islisteleme": window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListe(); break;
@@ -3369,6 +3373,11 @@ async function dbYukle() {
     if(isler.data) DB.mesailer = (typeof mesailer !== 'undefined' && mesailer.data) ? mesailer.data.map(mesaiDBdenJS) : [];
     if(talepler && talepler.data) DB.talepler = talepler.data;
     if(nakliyeler && nakliyeler.data) DB.nakliyeler = nakliyeler.data;
+    // İş kazaları (tablo yoksa ana yüklemeyi bozmasın diye ayrı/güvenli)
+    try {
+      const kazalar = await supa.from('kazalar').select('*').order('tarih', {ascending:false});
+      DB.kazalar = (kazalar && kazalar.data) ? kazalar.data : [];
+    } catch(e) { DB.kazalar = []; }
     if(ayarlar.data) {
       ayarlar.data.forEach(function(a) {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
@@ -4381,6 +4390,146 @@ async function nakliyeSil(id) {
   showToast("Nakliye silindi.");
   renderNakliyeListe();
 }
+
+// ═══════════════ İŞ KAZASI ═══════════════
+function renderKaza() {
+  var soforOpts = (DB.soforler||[]).map(function(s){ return '<option value="'+(s.isim||s.ad||s)+'">'+(s.isim||s.ad||s)+'</option>'; }).join("");
+  var aracOpts = (DB.araclar||[]).map(function(a){ return '<option value="'+a.plaka+'">'+a.plaka+'</option>'; }).join("");
+  setContent(`
+    <div class="card">
+      <div class="section-title">YENİ İŞ KAZASI KAYDI</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="field">
+          <label>Tarih *</label>
+          <input type="date" id="k-tarih" value="${bugunTR()}"/>
+        </div>
+        <div class="field">
+          <label>Kişi (Yaralanan/İlgili)</label>
+          <input list="k-sofor-list" id="k-kisi" placeholder="Ad Soyad"/>
+          <datalist id="k-sofor-list">${soforOpts}</datalist>
+        </div>
+        <div class="field">
+          <label>Araç / Plaka</label>
+          <input list="k-arac-list" id="k-arac" placeholder="İlgili araç (varsa)"/>
+          <datalist id="k-arac-list">${aracOpts}</datalist>
+        </div>
+        <div class="field">
+          <label>Ağırlık *</label>
+          <select id="k-agirlik">
+            <option value="Hafif">Hafif (yaralanmasız/ramak kala)</option>
+            <option value="Orta">Orta (hafif yaralanma)</option>
+            <option value="Ağır">Ağır (ciddi yaralanma)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Açıklama *</label>
+          <input type="text" id="k-aciklama" placeholder="Ne oldu, nasıl oldu..."/>
+        </div>
+        <button class="btn btn-blue" onclick="kazaEkle()">+ Kaza Kaydı Ekle</button>
+      </div>
+    </div>
+    <div style="height:20px"></div>
+  `);
+}
+
+function renderKazaListe() {
+  var filtreBas = window.KAZA_BAS || "";
+  var filtreBit = window.KAZA_BIT || "";
+  var kazalar = DB.kazalar || [];
+  if(filtreBas) kazalar = kazalar.filter(function(k){ return k.tarih>=filtreBas; });
+  if(filtreBit) kazalar = kazalar.filter(function(k){ return k.tarih<=filtreBit; });
+
+  var agirSay = kazalar.filter(function(k){ return k.agirlik==="Ağır"; }).length;
+
+  function renkAgirlik(a){ return a==="Ağır"?"#ff453a":a==="Orta"?"#ff9f0a":"#30d158"; }
+
+  setContent(`
+    <div class="card">
+      <div class="section-title">FİLTRELE</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="field">
+          <label>Başlangıç</label>
+          <input type="date" value="${filtreBas}" onchange="kazaTarihFiltre('bas',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Bitiş</label>
+          <input type="date" value="${filtreBit}" onchange="kazaTarihFiltre('bit',this.value)"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="kazaHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="kazaHizliFiltre(365)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 1 Yıl</button>
+        <button onclick="kazaHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
+      </div>
+    </div>
+
+    ${kazalar.length>0?`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-val" style="color:#0a84ff">${kazalar.length}</div><div class="kpi-unit">adet</div><div class="kpi-label">Toplam Kaza</div></div>
+      <div class="kpi-card"><div class="kpi-icon">🔴</div><div class="kpi-val" style="color:#ff453a">${agirSay}</div><div class="kpi-unit">adet</div><div class="kpi-label">Ağır Kaza</div></div>
+    </div>`:""}
+
+    ${kazalar.length===0?'<div class="empty"><div class="empty-icon">⚠️</div>İş kazası kaydı yok.</div>':""}
+
+    ${kazalar.map(function(k) {
+      return '<div class="card" style="border-left:3px solid '+renkAgirlik(k.agirlik)+';margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div style="flex:1">' +
+        '<div style="font-weight:700;font-size:14px">⚠️ '+(k.aciklama||"")+'</div>' +
+        '<div style="font-size:11px;color:#636366">📅 '+k.tarih+(k.kisi?' • 👤 '+k.kisi:"")+(k.arac?' • 🚗 '+k.arac:"")+'</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
+        '<span class="badge" style="background:'+renkAgirlik(k.agirlik)+'22;color:'+renkAgirlik(k.agirlik)+'">'+k.agirlik+'</span>' +
+        (KUL.rol==="admin"?'<button onclick="kazaSil('+k.id+')" style="background:none;border:1px solid #ff453a;border-radius:6px;color:#ff453a;font-size:11px;cursor:pointer;padding:3px 8px">🗑️ Sil</button>':"") +
+        '</div></div></div>';
+    }).join("")}
+    <div style="height:20px"></div>
+  `);
+}
+
+function kazaTarihFiltre(tip, v) {
+  if(tip==="bas") window.KAZA_BAS=v; else window.KAZA_BIT=v;
+  renderKazaListe();
+}
+function kazaHizliFiltre(gun) {
+  if(gun===0) { window.KAZA_BAS=""; window.KAZA_BIT=""; }
+  else { window.KAZA_BIT=bugunTR(); window.KAZA_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0]; }
+  renderKazaListe();
+}
+
+async function kazaEkle() {
+  var tarih = document.getElementById("k-tarih").value;
+  var kisi = document.getElementById("k-kisi").value.trim();
+  var arac = document.getElementById("k-arac").value.trim();
+  var agirlik = document.getElementById("k-agirlik").value;
+  var aciklama = document.getElementById("k-aciklama").value.trim();
+  if(!tarih||!agirlik||!aciklama) { showToast("Tarih, ağırlık ve açıklama zorunlu!","error"); return; }
+  var yeni = {tarih, kisi, arac, agirlik, aciklama};
+  try {
+    const data = await kazaEkleDB(yeni);
+    DB.kazalar = DB.kazalar || [];
+    DB.kazalar.unshift(Object.assign({}, yeni, {id:data.id}));
+    showToast("İş kazası kaydı eklendi.");
+    if(AKTIF_TAB==="kazaliste") renderKazaListe(); else renderKaza();
+  } catch(e) { showToast("Hata: "+(e.message||"kayıt eklenemedi"),"error"); }
+}
+
+async function kazaSil(id) {
+  if(KUL.rol!=="admin") { showToast("Bu işlem için yetkiniz yok.","error"); return; }
+  if(!confirm("Bu kaza kaydını silmek istediğinize emin misiniz?")) return;
+  try { await kazaSilDB(id); } catch(e) {}
+  DB.kazalar = (DB.kazalar||[]).filter(function(k){ return k.id!==id; });
+  showToast("Kaza kaydı silindi.");
+  renderKazaListe();
+}
+
+async function kazaEkleDB(k) {
+  const {data,error} = await supa.from('kazalar').insert({
+    tarih:k.tarih, kisi:k.kisi||"", arac:k.arac||"", agirlik:k.agirlik, aciklama:k.aciklama||""
+  }).select().single();
+  if(error) throw error; return data;
+}
+async function kazaSilDB(id) { await supa.from('kazalar').delete().eq('id',id); }
 
 // ═══════════════════════════════════════════
 // ARAÇ TALEPLERİ
