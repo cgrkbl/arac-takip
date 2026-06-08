@@ -73,7 +73,7 @@ textarea{resize:vertical;}
 .nav-btn span:first-child{font-size:20px;}
 .nav-badge{position:absolute;top:6px;right:25%;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 #content{padding:16px;max-width:680px;margin:0 auto;padding-bottom:90px;}
-#content.kpi-genis{max-width:1200px;}
+#content.kpi-genis{max-width:100%;padding-left:24px;padding-right:24px;}
 
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
@@ -131,8 +131,8 @@ textarea{resize:vertical;}
 .dash-row2 { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; }
 .dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
-.dash-panel-bos { height:120px; display:flex; align-items:center; justify-content:center; color:#5a6f8f; font-size:12px; border:1px dashed #5a4b7a; border-radius:10px; }
-.dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
+.dash-panel-bos { height:170px; display:flex; align-items:center; justify-content:center; color:#5a6f8f; font-size:12px; border:1px dashed #5a4b7a; border-radius:10px; }
+.dash-kpi-kart { border-radius:14px; padding:20px 16px; color:#fff; }
 .dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
 .dash-kpi-val { font-size:24px; font-weight:800; line-height:1; }
 .dash-kpi-filtre { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
@@ -522,7 +522,7 @@ function logout() {
 // NAVİGASYON
 // ═══════════════════════════════════════════
 const MENU_GRUPLARI = {
-  ana:     [{id:"rapor",label:"📊 KPI"},{id:"maliyet",label:"💰 Maliyet"}],
+  ana:     [{id:"rapor",label:"📊 KPI"}],
   sefer:   [{id:"cikis",label:"🚀 Çıkış"},{id:"aktif",label:"🟡 Yolda"},{id:"liste",label:"📋 Liste"},{id:"harita",label:"🗺️ Harita"}],
   yonetim: [{id:"araclar",label:"🚗 Araçlar"},{id:"soforler",label:"👤 Şoförler"},{id:"konumlar",label:"📍 Konumlar"},{id:"ayarlar",label:"⚙️ Ayarlar"}],
   diger:   [{id:"yakit",label:"⛽ Yakıt"},{id:"yakitliste",label:"📋 Yakıt Liste"},{id:"bakim",label:"🔧 Bakım"},{id:"bakimliste",label:"📋 Bakım Liste"},{id:"mesailer",label:"⏰ Mesailer"},{id:"mesailiste",label:"📋 Mesai Liste"},{id:"islistesi",label:"📋 İş Listesi"},{id:"islisteleme",label:"📋 İş Liste"},{id:"talepler",label:"🚗 Talepler"},{id:"nakliye",label:"🚚 Nakliye"},{id:"nakliyeliste",label:"📋 Nakliye Liste"}],
@@ -1017,6 +1017,14 @@ function kutuSeferSayisi(mod) {
   return data.length;
 }
 
+// Belirli dönemde toplam yakıt maliyeti (TL)
+function kutuYakitMaliyet(mod) {
+  var a = donemAralik(mod);
+  var data = DB.yakitlar || [];
+  if(a.bas) data = data.filter(function(y){ return y.tarih>=a.bas && y.tarih<=a.bit; });
+  return data.reduce(function(s,y){ return s+(y.tutar||0); }, 0);
+}
+
 function renderKPI() {
   var filtreMod = window.KPI_MOD || "bugun";
   var filtreSofor = window.KPI_SOFOR || "Tümü";
@@ -1161,14 +1169,13 @@ function renderKPI() {
           <div class="dash-sol">
             <!-- ÜST SATIR: 3 panel -->
             <div class="dash-row3">
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 1</div><div class="dash-panel-bos">boş</div></div>
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 2</div><div class="dash-panel-bos">boş</div></div>
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 3</div><div class="dash-panel-bos">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">💰 Maliyet Kırılımı</div>${(tTutar+nakliyeMaliyet+bakimMaliyet)>0?`<div style="display:flex;align-items:center;gap:12px"><canvas id="dash-maliyet-pie" width="150" height="150"></canvas><div id="dash-maliyet-pie-legend" style="flex:1;font-size:12px"></div></div>`:`<div class="dash-panel-bos">veri yok</div>`}</div>
+              <div class="dash-panel" style="grid-column:span 2"><div class="dash-panel-bas">⛽ Yakıt Maliyeti (Son 12 Ay)</div><canvas id="dash-yakit-trend" width="640" height="200" style="width:100%;height:200px"></canvas></div>
             </div>
             <!-- ORTA SATIR: 2 geniş panel -->
             <div class="dash-row2">
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 4</div><div class="dash-panel-bos" style="height:130px">boş</div></div>
-              <div class="dash-panel"><div class="dash-panel-bas">PANEL 5</div><div class="dash-panel-bos" style="height:130px">boş</div></div>
+              <div class="dash-panel"><div class="dash-panel-bas">🚗 Araç Bazlı KM Yakıt Gideri (TL/km)</div><canvas id="dash-arac-tlkm" width="320" height="240" style="width:100%;height:240px"></canvas></div>
+              <div class="dash-panel"><div class="dash-panel-bas">🔧 Aylık Bakım Maliyeti (Son 12 Ay)</div><canvas id="dash-bakim-trend" width="320" height="240" style="width:100%;height:240px"></canvas></div>
             </div>
             <!-- ALT SATIR: 3 panel -->
             <div class="dash-row3">
@@ -1210,6 +1217,14 @@ function renderKPI() {
   setTimeout(function(){
     // Aylık trendler
     cizAlanGrafik("dash-km-trend", aylikSeri("km",6), "#b39ddb", "rgba(126,87,194,0.35)");
+    cizAlanGrafik("dash-yakit-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
+    // Araç bazlı km yakıt gideri (TL/km) = tüketim/100 × güncel litre fiyatı
+    var lfDash = parseFloat(DB.litreFiyati)||0;
+    var aracTlKm = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; })
+      .map(function(a){ return {etiket:a.plaka, deger:Math.round(parseFloat(a.tuketim)/100*lfDash*100)/100}; })
+      .sort(function(a,b){ return b.deger-a.deger; });
+    if(aracTlKm.length>0 && lfDash>0) cizYatayBar("dash-arac-tlkm", aracTlKm, "#7e57c2");
+    cizAlanGrafik("dash-bakim-trend", aylikSeri("bakim",12), "#ce93d8", "rgba(186,104,200,0.40)");
     cizAlanGrafik("dash-maliyet-trend", aylikSeri("maliyet",6), "#4db6ac", "rgba(38,166,154,0.30)");
     // Maliyet kırılımı donut
     var mToplam = tTutar+nakliyeMaliyet+bakimMaliyet;
@@ -1255,6 +1270,7 @@ function renderKPI() {
 function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
 function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
+function kutu2Mod(mod) { window.KPI_KUTU2_MOD=mod; renderKPI(); }
 
 async function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
@@ -1421,6 +1437,10 @@ function aylikSeri(tip, ayN) {
       deger = yk+nk+bk;
     } else if(tip==="sefer") {
       deger = (DB.tamamlananlar||[]).filter(function(s){ return s.tarih && s.tarih.startsWith(onek); }).length;
+    } else if(tip==="yakit") {
+      deger = (DB.yakitlar||[]).filter(function(y){ return y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.tutar||0); },0);
+    } else if(tip==="bakim") {
+      deger = (DB.bakimlar||[]).filter(function(b){ return b.tarih && b.tarih.startsWith(onek); }).reduce(function(a,b){ return a+(b.maliyet||0); },0);
     }
     sonuc.push({label:aylarKisa[ay], deger:Math.round(deger)});
   }
@@ -1832,6 +1852,7 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
 
   ctx.clearRect(0,0,cssW,cssH);
   let aci = -Math.PI/2;
+  var dilimAcilari = [];
   veriler.forEach((v,i) => {
     const dilim = (v.deger/toplam) * Math.PI * 2;
     ctx.beginPath();
@@ -1843,6 +1864,7 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
     ctx.strokeStyle = "#1c1c1e";
     ctx.lineWidth = 2;
     ctx.stroke();
+    dilimAcilari.push({orta: aci + dilim/2, yuzde: v.yuzde});
     aci += dilim;
   });
 
@@ -1853,6 +1875,19 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
   ctx.arc(cx,cy,r*0.55,0,Math.PI*2);
   ctx.fill();
   ctx.restore();
+
+  // Dilim üzerine yüzde yazıları (görseldeki gibi)
+  var etiketR = r*0.78;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 12px Arial";
+  dilimAcilari.forEach(function(d){
+    if(d.yuzde < 4) return; // çok küçük dilime yazma
+    var x = cx + Math.cos(d.orta)*etiketR;
+    var y = cy + Math.sin(d.orta)*etiketR;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(d.yuzde+"%", x, y);
+  });
 
   // Legend
   const leg = document.getElementById(legendId);
