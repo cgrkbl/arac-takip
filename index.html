@@ -1262,9 +1262,9 @@ function kategoriCiz(aktif, mod) {
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(){return 1;}), "#26a69a");
     cizYatayBar("kp-arac", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.plaka;}, function(){return 1;}), "#26a69a");
   } else if(aktif==="isdurum") {
-    cizDikeyBar("kp-trend", aylikSeri("sefer",12), "#26a69a");
+    cizDikeyBar("kp-trend", aylikSeri("is",12), "#66bb6a");
     cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(window.KPI_isDurum||[]), ["#66bb6a","#ef5350","#ffa726"]);
-    cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(){return 1;}), "#26a69a");
+    cizPastaGrafik("kp-sofor","kp-sofor-legend", yuzdele(grupla(donemFiltre(DB.isler||[],mod), function(i){return i.kategori||"Diğer";}, function(){return 1;})), ["#42a5f5","#7e57c2","#26a69a","#ffa726","#ab47bc","#ef5350","#66bb6a"]);
   } else if(aktif==="yuk") {
     cizDikeyBar("kp-trend", aylikSeriYuk(12), "#4dd0e1");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.tamamlananlar||[],mod), function(s){return s.sofor;}, function(s){return parseFloat(s.yuk_miktari)||0;}), "#4dd0e1");
@@ -1287,6 +1287,7 @@ function kategoriCiz(aktif, mod) {
     cizYatayBar("kp-arac", grupla(donemFiltre(DB.bakimlar||[],mod), function(b){return b.plaka;}, function(b){return b.maliyet||0;}), "#5e35b1");
   } else if(aktif==="nakliye") {
     cizAlanGrafik("kp-trend", aylikSeri("nakliye",12), "#4db6ac", "rgba(38,166,154,0.40)");
+    cizPastaGrafik("kp-pie","kp-pie-legend", yuzdele(grupla(donemFiltre(DB.nakliyeler||[],mod), function(n){return n.sevk_adresi||"Diğer";}, function(){return 1;})), ["#ab47bc","#4db6ac","#42a5f5","#ffa726","#7e57c2","#ef5350","#66bb6a"]);
     cizYatayBar("kp-arac", grupla(donemFiltre(DB.nakliyeler||[],mod), function(n){return n.sevk_adresi||"Diğer";}, function(n){return n.fiyat||0;}), "#ab47bc");
   }
 }
@@ -1316,22 +1317,24 @@ function kategoriPanelleri(aktif) {
     km:      {trend:"📈 Aylık KM", sofor:"👤 Şoför Bazında KM", arac:"", pie:"🚗 Araç KM Dağılımı"},
     yakit:   {trend:"📈 Aylık Yakıt Maliyeti", sofor:"👤 Şoför Bazında Yakıt", arac:"🚗 Araç Bazlı KM Maliyeti (TL/km)", pie:""},
     bakim:   {trend:"📈 Aylık Bakım Maliyeti", sofor:"", arac:"🚗 Araç Bazında Bakım", pie:"🔧 Bakım Türü Dağılımı"},
-    nakliye: {trend:"📈 Aylık Nakliye Maliyeti", sofor:"", arac:"📍 Sevk Adresine Göre Nakliye", pie:""},
-    isdurum: {trend:"📈 Aylık Sefer Sayısı", sofor:"👤 Şoför Bazında Sefer", arac:"🚗 Araç Bazında Sefer", pie:"✅ İş Durumu"}
+    nakliye: {trend:"📈 Aylık Nakliye Maliyeti", sofor:"", arac:"📍 Sevk Adresine Göre Tutar", pie:"🔢 Sevk Adresine Göre Sayı"},
+    isdurum: {trend:"📈 Aylık İş Sayısı", sofor:"🏢 Bölümlere Göre İş Dağılımı", arac:"", pie:"✅ İş Durumu Dağılımı"}
   };
   var b = basliklar[aktif] || basliklar.sefer;
   function panel(baslik, id, tip, h, genis) {
     if(!baslik) return "";
     h = h || 200;
     var span = genis ? ' style="grid-column:span 2"' : '';
-    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;gap:12px;min-height:150px"><canvas id="'+id+'" width="'+(genis?320:150)+'" height="170"></canvas><div id="'+id+'-legend" style="flex:1;font-size:12px"></div></div></div>';
+    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;gap:12px;min-height:195px"><canvas id="'+id+'" width="'+(genis?320:170)+'" height="180"></canvas><div id="'+id+'-legend" style="flex:1;font-size:12px"></div></div></div>';
     return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><canvas id="'+id+'" width="640" height="'+h+'" style="width:100%;height:'+h+'px"></canvas></div>';
   }
   // Üst sıra: geniş trend grafiği
-  var ust = '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.trend,"kp-trend","trend",220)+'</div>';
-  // Alt sıra: en fazla 2 panel (eşit yükseklik için tüm kategorilerde aynı)
-  var altPaneller = [panel(b.pie,"kp-pie","pie"), panel(b.sofor,"kp-sofor","bar",240), panel(b.arac,"kp-arac","bar",240)].filter(function(x){return x;}).slice(0,2);
-  var alt = '<div class="dash-row2">'+altPaneller.join("")+'</div>';
+  var ust = '<div class="dash-row2" style="grid-template-columns:1fr">'+panel(b.trend,"kp-trend","trend",260)+'</div>';
+  // Alt sıra: tüm paneller AYNI yükseklikte (195px) - kategori fark etmez
+  var soforTip = (aktif==="isdurum") ? "pie" : "bar";
+  var altPaneller = [panel(b.pie,"kp-pie","pie"), panel(b.sofor,"kp-sofor",soforTip,195), panel(b.arac,"kp-arac","bar",195)].filter(function(x){return x;}).slice(0,2);
+  // Tek panel varsa bile alt sıra iki sütun genişliğinde dursun (hizalama için)
+  var alt = '<div class="dash-row2"'+(altPaneller.length===1?' style="grid-template-columns:1fr 1fr"':'')+'>'+altPaneller.join("")+(altPaneller.length===1?'<div></div>':'')+'</div>';
   return ust+alt;
 }
 function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
@@ -1512,6 +1515,10 @@ function aylikSeri(tip, ayN) {
       deger = (DB.bakimlar||[]).filter(function(b){ return b.tarih && b.tarih.startsWith(onek); }).reduce(function(a,b){ return a+(b.maliyet||0); },0);
     } else if(tip==="nakliye") {
       deger = (DB.nakliyeler||[]).filter(function(nk){ return nk.tarih && nk.tarih.startsWith(onek); }).reduce(function(a,nk){ return a+(nk.fiyat||0); },0);
+    } else if(tip==="is") {
+      deger = (DB.isler||[]).filter(function(i){ return i.tarih && i.tarih.startsWith(onek); }).length;
+    } else if(tip==="istamam") {
+      deger = (DB.isler||[]).filter(function(i){ return i.tarih && i.tarih.startsWith(onek) && i.durum==="Tamamlandı"; }).length;
     }
     sonuc.push({label:aylarKisa[ay], deger:Math.round(deger)});
   }
