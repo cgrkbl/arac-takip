@@ -4266,7 +4266,25 @@ async function talепGonder() {
   }
 }
 
+async function talepleriTazele() {
+  try {
+    var res = await supa.from('talepler').select('*').order('created_at', {ascending:false});
+    if(res && res.data) {
+      var eski = JSON.stringify(DB.talepler.map(function(t){return t.id+":"+t.durum;}));
+      DB.talepler = res.data;
+      var yeni = JSON.stringify(DB.talepler.map(function(t){return t.id+":"+t.durum;}));
+      // Veri değiştiyse ve hâlâ talepler ekranındaysak yeniden çiz (sonsuz döngüye girmeden)
+      if(eski!==yeni && AKTIF_TAB==="talepler") {
+        window._talepTazeleniyor = true;
+        renderTalepler();
+        window._talepTazeleniyor = false;
+      }
+    }
+  } catch(e) {}
+}
+
 function renderTalepler() {
+  if(!window._talepTazeleniyor) talepleriTazele();
   var bekleyen = DB.talepler.filter(function(t){ return t.durum==="Bekliyor"; }).length;
   setContent(`
     <div style="display:flex;gap:10px;margin-bottom:12px">
