@@ -10,7 +10,7 @@
 <title>Küçüker Lojistik</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{background:#1c1c1e;font-family:-apple-system,Segoe UI,sans-serif;color:#f2f2f7;min-height:100vh;}
+body{background:#16141c;font-family:-apple-system,Segoe UI,sans-serif;color:#f2f2f7;min-height:100vh;}
 input,select,textarea{font-family:inherit;font-size:14px;color:#f2f2f7;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;padding:10px 12px;width:100%;outline:none;-webkit-appearance:none;}
 input:focus,select:focus,textarea:focus{border-color:#0a84ff;}
 input[type=date]{color:#f2f2f7;}
@@ -77,7 +77,7 @@ textarea{resize:vertical;}
 
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.kpi-card{background:#2c2c2e;border:1px solid #48484a;border-radius:12px;padding:14px;}
+.kpi-card{background:#2c2c2e;border:1px solid #48484a;border-left:3px solid #7e57c2;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
 .kpi-icon{font-size:18px;margin-bottom:6px;}
 .kpi-val{font-size:20px;font-weight:800;}
 .kpi-unit{font-size:10px;color:#636366;margin-top:1px;}
@@ -127,7 +127,8 @@ textarea{resize:vertical;}
 .dash-kpi-kolon { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 .dash-sol { display:flex; flex-direction:column; gap:12px; }
 .dash-row2 { display:grid; grid-template-columns:1fr; gap:12px; }
-.dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; }
+.dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; position:relative; overflow:hidden; }
+.dash-panel::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#26a69a,#7e57c2,#42a5f5); opacity:0.8; }
 .dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
 .dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
 .dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
@@ -1243,7 +1244,7 @@ function renderKPI() {
 
 
     <div class="card" style="background:transparent;border:none;margin-bottom:12px;padding:0;overflow:hidden">
-      <div style="background:#4527a0;padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="background:linear-gradient(135deg,#4527a0,#6a3fb5);padding:16px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(106,63,181,0.45);border-radius:14px 14px 0 0">
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:24px">🚛</div>
           <div>
@@ -1359,7 +1360,7 @@ function kategoriPanelleri(aktif) {
     if(!baslik) return "";
     h = h || 200;
     var span = genis ? ' style="grid-column:span 2"' : '';
-    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;min-height:195px;flex-wrap:wrap"><canvas id="'+id+'" width="'+(genis?320:170)+'" height="180" style="max-width:100%;height:auto"></canvas><div id="'+id+'-legend" style="flex:1;min-width:120px;font-size:12px"></div></div></div>';
+    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;min-height:195px;flex-wrap:wrap"><canvas id="'+id+'" width="'+(genis?320:170)+'" height="180" style="max-width:'+(genis?320:170)+'px;width:100%"></canvas><div id="'+id+'-legend" style="flex:1;min-width:120px;font-size:13px"></div></div></div>';
     return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><canvas id="'+id+'" width="640" height="'+h+'" style="width:100%;height:'+h+'px"></canvas></div>';
   }
   // Üst sıra: geniş trend grafiği
@@ -1458,7 +1459,7 @@ function cizYatayBar(canvasId, veriler, renk) {
   veriler.forEach(function(v,i){
     var y = i*satirH + satirH/2;
     // etiket
-    ctx.fillStyle="#d1c4e9"; ctx.font="11px Arial"; ctx.textAlign="left"; ctx.textBaseline="middle";
+    ctx.fillStyle="#d1c4e9"; ctx.font="600 13px -apple-system,Segoe UI,Arial"; ctx.textAlign="left"; ctx.textBaseline="middle";
     var et = v.etiket.length>10 ? v.etiket.substring(0,9)+"…" : v.etiket;
     ctx.fillText(et, 0, y);
     // bar
@@ -1468,7 +1469,7 @@ function cizYatayBar(canvasId, veriler, renk) {
     if(ctx.roundRect) ctx.roundRect(etiketGen, y-barH/2, Math.max(barW,2), barH, 4); else ctx.rect(etiketGen, y-barH/2, Math.max(barW,2), barH);
     ctx.fill();
     // değer
-    ctx.fillStyle="#fff"; ctx.font="bold 11px Arial"; ctx.textAlign="left";
+    ctx.fillStyle="#fff"; ctx.font="bold 13px -apple-system,Segoe UI,Arial"; ctx.textAlign="left";
     ctx.fillText(v.deger.toLocaleString("tr-TR"), etiketGen+barW+6, y);
   });
 }
@@ -1497,8 +1498,8 @@ function cizDikeyBar(canvasId, noktalar, renk) {
     ctx.beginPath();
     if(ctx.roundRect) ctx.roundRect(x,y,barW,Math.max(h,2),4); else ctx.rect(x,y,barW,Math.max(h,2));
     ctx.fill();
-    if(nt.deger>0){ ctx.fillStyle="#fff"; ctx.font="bold 10px Arial"; ctx.textAlign="center"; ctx.fillText(nt.deger, x+barW/2, y-4); }
-    ctx.fillStyle="#8fa3c4"; ctx.font="9px Arial"; ctx.textAlign="center"; ctx.fillText(nt.label, x+barW/2, H-6);
+    if(nt.deger>0){ ctx.fillStyle="#fff"; ctx.font="bold 12px -apple-system,Segoe UI,Arial"; ctx.textAlign="center"; ctx.fillText(nt.deger, x+barW/2, y-4); }
+    ctx.fillStyle="#8fa3c4"; ctx.font="600 11px -apple-system,Segoe UI,Arial"; ctx.textAlign="center"; ctx.fillText(nt.label, x+barW/2, H-6);
   });
 }
 
@@ -1555,12 +1556,12 @@ function cizAlanGrafik(canvasId, noktalar, cizgiRenk, dolguRenk) {
     // değer (sadece sıfır değilse ve yer varsa)
     if(nt.deger>0) {
       ctx.fillStyle = "#f2f2f7";
-      ctx.font = "bold 9px Arial";
+      ctx.font = "bold 11px -apple-system,Segoe UI,Arial";
       ctx.fillText(nt.deger>=1000?(Math.round(nt.deger/100)/10)+"k":nt.deger, x, y-7);
     }
     // ay etiketi
     ctx.fillStyle = "#8fa3c4";
-    ctx.font = "9px Arial";
+    ctx.font = "600 11px -apple-system,Segoe UI,Arial";
     ctx.fillText(nt.label, x, H-7);
   });
 }
@@ -1806,7 +1807,7 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
   var etiketR = r*0.78;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 12px Arial";
+  ctx.font = "bold 13px -apple-system,Segoe UI,Arial";
   dilimAcilari.forEach(function(d){
     if(d.yuzde < 4) return; // çok küçük dilime yazma
     var x = cx + Math.cos(d.orta)*etiketR;
