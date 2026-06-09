@@ -300,6 +300,18 @@ textarea{resize:vertical;}
 
 <div id="toast"></div>
 
+<div id="red-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1c1c1e;border:1px solid #48484a;border-radius:16px;padding:20px;width:100%;max-width:380px">
+    <div style="font-size:16px;font-weight:700;color:#f2f2f7;margin-bottom:4px">Talebi Reddet</div>
+    <div style="font-size:12px;color:#aeaeb2;margin-bottom:12px">Red gerekçesini yazın (talep sahibi görecek):</div>
+    <textarea id="red-neden-input" rows="3" placeholder="Örn: Bu tarihte araç müsait değil" style="width:100%;background:#2c2c2e;border:1px solid #48484a;border-radius:10px;color:#f2f2f7;font-size:13px;padding:10px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="redModalKapat()" style="flex:1;padding:11px;background:#3a3a3c;border:none;border-radius:10px;color:#f2f2f7;font-size:14px;font-weight:600;cursor:pointer">Vazgeç</button>
+      <button onclick="redModalOnayla()" style="flex:1;padding:11px;background:#ff453a;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Reddet</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // VERİ
@@ -4364,10 +4376,21 @@ async function talepOnayla(id) {
   renderTalepler();
 }
 
-async function talepReddet(id) {
-  var neden = prompt("Red gerekçesi (talep sahibi görecek):", "");
-  if(neden===null) return; // iptal edildi
-  neden = neden.trim();
+function talepReddet(id) {
+  window._redTalepId = id;
+  document.getElementById("red-neden-input").value = "";
+  document.getElementById("red-modal").style.display = "flex";
+  setTimeout(function(){ document.getElementById("red-neden-input").focus(); }, 100);
+}
+function redModalKapat() {
+  document.getElementById("red-modal").style.display = "none";
+  window._redTalepId = null;
+}
+async function redModalOnayla() {
+  var id = window._redTalepId;
+  if(!id) return;
+  var neden = document.getElementById("red-neden-input").value.trim();
+  redModalKapat();
   try { await talepReddetDB(id, neden); } catch(e) {}
   DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Reddedildi", red_nedeni:neden}):t; });
   showToast("Talep reddedildi.");
