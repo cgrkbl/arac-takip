@@ -56,7 +56,7 @@ textarea{resize:vertical;}
 .tab-badge{position:absolute;top:5px;right:4px;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 #akordeon{background:#1c1c1e;border-bottom:1px solid #48484a;}
 .akr-bar{display:flex;background:#2c2c2e;}
-.akr-bas{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;user-select:none;border-bottom:2px solid transparent;color:#aeaeb2;}
+.akr-bas{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;user-select:none;border-bottom:2px solid transparent;color:#aeaeb2;position:relative;}
 .akr-bas .akr-ikon{font-size:17px;line-height:1;}
 .akr-bas .akr-baslik{font-weight:600;font-size:10px;white-space:nowrap;}
 .akr-bas.acik{color:#0a84ff;border-bottom-color:#0a84ff;background:#1c1c1e;}
@@ -593,7 +593,7 @@ function renderAkordeon() {
     return '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')" style="position:relative">'+
       '<span class="akr-ikon">'+mod.ikon+'</span>'+
       '<span class="akr-baslik">'+mod.baslik+'</span>'+
-      (bekSay>0?'<span style="background:#ff453a;color:#fff;border-radius:10px;min-width:17px;height:17px;padding:0 5px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:5px">'+bekSay+'</span>':'')+
+      (bekSay>0?'<span style="position:absolute;top:3px;right:6px;background:#ff453a;color:#fff;border-radius:10px;min-width:16px;height:16px;padding:0 4px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">'+bekSay+'</span>':'')+
     '</div>';
   }).join("");
 
@@ -603,7 +603,7 @@ function renderAkordeon() {
     var bekSay = (a.id==="talepler") ? DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length : 0;
     return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')" style="position:relative">'+
       '<span>'+a.ikon+'</span><span>'+a.label+'</span>'+
-      (bekSay>0?'<span style="background:#ff453a;color:#fff;border-radius:10px;min-width:18px;height:18px;padding:0 5px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:6px">'+bekSay+'</span>':'')+
+      (bekSay>0?'<span style="position:absolute;top:4px;right:8px;background:#ff453a;color:#fff;border-radius:10px;min-width:18px;height:18px;padding:0 5px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">'+bekSay+'</span>':'')+
       '</div>';
   }).join("") + '</div>';
 
