@@ -4247,15 +4247,8 @@ function talepEkraniGoster() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("talep-screen").style.display = "flex";
   zoomAc(); // talep formunda zoom serbest
-  // Tarih ve saati otomatik doldur
-  var simdi = new Date();
-  var yil = simdi.getFullYear();
-  var ay = String(simdi.getMonth()+1).padStart(2,"0");
-  var gun = String(simdi.getDate()).padStart(2,"0");
-  var saat = String(simdi.getHours()).padStart(2,"0");
-  var dakika = String(simdi.getMinutes()).padStart(2,"0");
-  document.getElementById("t-tarih").value = yil+"-"+ay+"-"+gun;
-  document.getElementById("t-saat").value = saat+":"+dakika;
+  // Tarih ve saati otomatik doldur (bugün)
+  talepTarihSaatDoldur();
   // Departman/kategori dropdown'ını iş kategorileriyle doldur
   var dep = document.getElementById("t-departman");
   if(dep && dep.options.length<=1) {
@@ -4271,10 +4264,22 @@ function talепYeniGonder() {
   document.getElementById("t-isim").value = "";
   document.getElementById("t-departman").value = "";
   document.getElementById("t-nereye").value = "";
-  document.getElementById("t-tarih").value = "";
-  document.getElementById("t-saat").value = "";
+  talepTarihSaatDoldur(); // tarih/saat bugünün değeriyle dolsun
   document.getElementById("t-aciklama").value = "";
   document.getElementById("talep-mesaj").textContent = "";
+}
+
+function talepTarihSaatDoldur() {
+  var simdi = new Date();
+  var yil = simdi.getFullYear();
+  var ay = String(simdi.getMonth()+1).padStart(2,"0");
+  var gun = String(simdi.getDate()).padStart(2,"0");
+  var saat = String(simdi.getHours()).padStart(2,"0");
+  var dakika = String(simdi.getMinutes()).padStart(2,"0");
+  var t = document.getElementById("t-tarih");
+  var s = document.getElementById("t-saat");
+  if(t) t.value = yil+"-"+ay+"-"+gun;
+  if(s) s.value = saat+":"+dakika;
 }
 
 function talepEkraniGizle() {
