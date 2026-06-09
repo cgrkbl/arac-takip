@@ -1315,11 +1315,11 @@ function kpiAktifSec(tip) { window.KPI_AKTIF=tip; renderKPI(); }
 // Aylık yük serisi (kg)
 function aylikSeriYuk(ayN) {
   var simdi=new Date(), aylar=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"], sonuc=[];
-  for(var k=ayN-1;k>=0;k--){
-    var d=new Date(simdi.getFullYear(),simdi.getMonth()-k,1);
-    var onek=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  var yilSimdi=simdi.getFullYear(), aySimdi=simdi.getMonth();
+  for(var ay=0;ay<=aySimdi;ay++){
+    var onek=yilSimdi+"-"+String(ay+1).padStart(2,"0");
     var deger=(DB.tamamlananlar||[]).filter(function(s){return s.tarih&&s.tarih.startsWith(onek);}).reduce(function(a,s){return a+(parseFloat(s.yuk_miktari)||0);},0);
-    sonuc.push({label:aylar[d.getMonth()], deger:deger});
+    sonuc.push({label:aylar[ay], deger:deger});
   }
   return sonuc;
 }
@@ -1386,10 +1386,11 @@ function aylikSeri(tip, ayN) {
   var simdi = new Date();
   var sonuc = [];
   var aylarKisa = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-  for(var k=ayN-1; k>=0; k--) {
-    var d = new Date(simdi.getFullYear(), simdi.getMonth()-k, 1);
+  var yilSimdi = simdi.getFullYear();
+  var aySimdi = simdi.getMonth(); // 0-11
+  for(var ay=0; ay<=aySimdi; ay++) {
+    var d = new Date(yilSimdi, ay, 1);
     var yil = d.getFullYear();
-    var ay = d.getMonth(); // 0-11
     var onek = yil+"-"+String(ay+1).padStart(2,"0");
     var deger = 0;
     if(tip==="km") {
