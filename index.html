@@ -515,6 +515,10 @@ async function girisYap(kul) {
   if(kul.rol==="admin") {
     document.getElementById("bottom-nav").style.display = "flex";
     altMenuSec("ana");
+    // Yeni talep bildirimi için arka planda sürekli kontrol (her sayfada)
+    window._talepIlkYukleme = true;
+    if(window._talepGlobalInterval) clearInterval(window._talepGlobalInterval);
+    window._talepGlobalInterval = setInterval(function(){ if(KUL && KUL.rol==="admin") talepleriTazele(); }, 20000);
   } else if(kul.rol==="yakit") {
     document.getElementById("bottom-nav").style.display = "none";
     renderTabBar([{id:"yakit",label:"⛽ Yakıt Girişi"},{id:"yakitliste",label:"📋 Yakıt Listesi"}]);
@@ -637,6 +641,7 @@ function renderTabBar(tablar) {
     <button class="tab-btn ${AKTIF_TAB===t.id?'active':''}" onclick="tabSec('${t.id}')">
       ${t.label}
       ${t.id==="aktif"&&DB.aktifSeferler.length>0?`<span class="tab-badge">${DB.aktifSeferler.length}</span>`:""}
+      ${t.id==="talepler"&&DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length>0?`<span class="tab-badge">${DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length}</span>`:""}
     </button>
   `).join("");
 }
@@ -4304,9 +4309,20 @@ async function talepleriTazele() {
   try {
     var res = await supa.from('talepler').select('*').order('created_at', {ascending:false});
     if(res && res.data) {
+      var eskiBekleyen = DB.talepler.filter(function(t){return t.durum==="Bekliyor";}).length;
       var eski = JSON.stringify(DB.talepler.map(function(t){return t.id+":"+t.durum;}));
       DB.talepler = res.data;
+      var yeniBekleyen = DB.talepler.filter(function(t){return t.durum==="Bekliyor";}).length;
       var yeni = JSON.stringify(DB.talepler.map(function(t){return t.id+":"+t.durum;}));
+      // Yeni bekleyen talep geldiyse uyarı ver (ilk yüklemede değil)
+      if(window._talepIlkYukleme && yeniBekleyen>eskiBekleyen) {
+        var fark = yeniBekleyen - eskiBekleyen;
+        showToast("🚗 "+fark+" yeni araç talebi geldi!");
+        talepBipCal();
+        // Sekme çubuğunu tazele (rozet güncellensin) - talepler ekranında değilsek bile
+        if(typeof renderTabBar==="function" && AKTIF_MENU) try { altMenuSec(AKTIF_MENU); } catch(e){}
+      }
+      window._talepIlkYukleme = true;
       // Veri değiştiyse ve hâlâ talepler ekranındaysak yeniden çiz (sonsuz döngüye girmeden)
       if(eski!==yeni && AKTIF_TAB==="talepler") {
         window._talepTazeleniyor = true;
@@ -4314,6 +4330,20 @@ async function talepleriTazele() {
         window._talepTazeleniyor = false;
       }
     }
+  } catch(e) {}
+}
+
+// Kısa bir bip sesi (Web Audio - dosya gerektirmez)
+function talepBipCal() {
+  try {
+    var ctx = new (window.AudioContext||window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "sine"; osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3);
+    osc.start(); osc.stop(ctx.currentTime+0.3);
   } catch(e) {}
 }
 
