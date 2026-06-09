@@ -1174,7 +1174,7 @@ function renderKPI() {
   // KM Birim Maliyet: dönemdeki yakıt tutarı / toplam km (TL/km)
   // KM Birim Maliyet: her aracın gerçek TL/km değerinin (litre÷km×fiyat) basit ortalaması
   var lf = parseFloat(DB.litreFiyati)||0;
-  var aracTlKmList = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, filtreMod); }).filter(function(v){ return v>0; });
+  var aracTlKmList = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, "tumu"); }).filter(function(v){ return v>0; });
   var kmBirimMaliyet = null;
   if(aracTlKmList.length>0) {
     kmBirimMaliyet = aracTlKmList.reduce(function(s,v){ return s+v; }, 0) / aracTlKmList.length;
@@ -1300,7 +1300,7 @@ function kategoriCiz(aktif, mod) {
     cizAlanGrafik("kp-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.sofor;}, function(y){return y.tutar||0;}), "#7e57c2");
     var tlkm = (DB.araclar||[])
-      .map(function(a){return {etiket:a.plaka, deger:Math.round(aracTlKm(a.plaka,mod)*100)/100};})
+      .map(function(a){return {etiket:a.plaka, deger:Math.round(aracTlKm(a.plaka,"tumu")*100)/100};})
       .filter(function(x){return x.deger>0;})
       .sort(function(a,b){return b.deger-a.deger;});
     cizYatayBar("kp-arac", tlkm, "#7e57c2");
@@ -1590,7 +1590,7 @@ async function kpiRaporExcel() {
   var bakTutar = bakimlar.reduce(function(a,b){ return a+(b.maliyet||0); },0);
   var toplamMaliyet = yakitTutar+nakTutar+bakTutar;
   var mesaiSaat = Math.round(mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); },0)/60);
-  var aracTlKmListE = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, filtreMod); }).filter(function(v){ return v>0; });
+  var aracTlKmListE = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, "tumu"); }).filter(function(v){ return v>0; });
   var kmBirim = aracTlKmListE.length>0 ? aracTlKmListE.reduce(function(s,v){return s+v;},0)/aracTlKmListE.length : 0;
   var isTamam = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
   var isOlmadi = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
