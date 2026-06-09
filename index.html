@@ -1845,6 +1845,7 @@ function renderListe() {
       </div>
       <div style="font-size:12px;color:#636366">${data.length} kayıt bulundu • Toplam ${data.reduce(function(a,s){return a+s.km_fark;},0).toLocaleString()} km</div>
     </div>
+    ${(KUL.rol==="admin"&&data.length>0)?`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="seferExcel()">📥 Excel'e Aktar</button></div>`:""}
     ${data.length===0?`<div class="empty"><div class="empty-icon">📭</div>Tamamlanan sefer yok.</div>`:""}
     ${data.map(s=>`
       <div class="card" style="border-left:3px solid #30d158;margin-bottom:10px">
@@ -2379,6 +2380,101 @@ async function yakitSil(id) {
   renderYakitListe();
 }
 
+// ═══ GENEL LİSTE EXCEL AKTARMA (tüm listeler aynı formatta) ═══
+async function listeExcel(baslik, sutunlar, satirlar, dosyaAdi) {
+  if(!satirlar || satirlar.length===0) { showToast("Aktarılacak kayıt yok!","error"); return; }
+  var bugun = new Date();
+  function trT(s){ if(!s) return ""; var p=String(s).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:s; }
+  var raporTarih = String(bugun.getDate()).padStart(2,"0")+"."+String(bugun.getMonth()+1).padStart(2,"0")+"."+bugun.getFullYear();
+  var KOYU="FF0F2147", BEYAZ="FFFFFFFF", SARI="FFFFD700", GRI="FFF2F2F2";
+  var ince={style:"thin",color:{argb:"FFBFBFBF"}};
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet(baslik.slice(0,30), {views:[{showGridLines:false}]});
+  var KOL = sutunlar.length;
+  ws.getColumn(1).width = 3;
+  // Sütun genişlikleri (içeriğe göre)
+  for(var c=0;c<KOL;c++){
+    var enUzun = String(sutunlar[c]).length;
+    satirlar.forEach(function(r){ var l=String(r[c]==null?"":r[c]).length; if(l>enUzun) enUzun=l; });
+    ws.getColumn(2+c).width = Math.min(Math.max(enUzun+3, 10), 40);
+  }
+  var R=1;
+  // Başlık şeridi
+  ws.getRow(R).height=26; ws.mergeCells(R,2,R,1+KOL);
+  var hc=ws.getCell(R,2); hc.value="KÜÇÜKER LOJİSTİK";
+  hc.font={name:"Arial",bold:true,size:15,color:{argb:BEYAZ}}; hc.fill={type:"pattern",pattern:"solid",fgColor:{argb:KOYU}}; hc.alignment={horizontal:"left",vertical:"middle",indent:1}; R++;
+  ws.getRow(R).height=20; ws.mergeCells(R,2,R,1+KOL);
+  var h2=ws.getCell(R,2); h2.value=baslik.toUpperCase();
+  h2.font={name:"Arial",bold:true,size:12,color:{argb:KOYU}}; h2.fill={type:"pattern",pattern:"solid",fgColor:{argb:SARI}}; h2.alignment={horizontal:"left",vertical:"middle",indent:1}; R++;
+  ws.getRow(R).height=16; ws.mergeCells(R,2,R,1+KOL);
+  var h3=ws.getCell(R,2); h3.value="Rapor Tarihi: "+raporTarih+"  •  Toplam "+satirlar.length+" kayıt";
+  h3.font={name:"Arial",size:9,italic:true,color:{argb:"FF888888"}}; h3.alignment={horizontal:"left",indent:1}; R++;
+  R++;
+  // Tablo başlıkları
+  ws.getRow(R).height=18;
+  for(var ci=0;ci<KOL;ci++){
+    var bc=ws.getCell(R,2+ci); bc.value=sutunlar[ci];
+    bc.font={name:"Arial",bold:true,size:10,color:{argb:BEYAZ}}; bc.fill={type:"pattern",pattern:"solid",fgColor:{argb:KOYU}};
+    bc.alignment={horizontal:"center",vertical:"middle"}; bc.border={top:ince,bottom:ince,left:ince,right:ince};
+  }
+  R++;
+  // Satırlar
+  satirlar.forEach(function(row, ri){
+    ws.getRow(R).height=16;
+    for(var ci=0;ci<KOL;ci++){
+      var dc=ws.getCell(R,2+ci); dc.value=row[ci];
+      dc.font={name:"Arial",size:10,color:{argb:"FF222222"}};
+      if(ri%2===1) dc.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}};
+      dc.alignment={horizontal: ci===0?"center":"left", vertical:"middle"};
+      dc.border={top:ince,bottom:ince,left:ince,right:ince};
+    }
+    R++;
+  });
+  try {
+    var buffer = await wb.xlsx.writeBuffer();
+    var blob = new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href=url; a.download=dosyaAdi+"_"+bugun.getFullYear()+"-"+String(bugun.getMonth()+1).padStart(2,"0")+"-"+String(bugun.getDate()).padStart(2,"0")+".xlsx";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    showToast("Excel indirildi!");
+  } catch(e){ showToast("Hata: "+(e.message||"oluşturulamadı"),"error"); }
+}
+
+// ─── Liste bazlı Excel aktarımları (genel listeExcel'i kullanır) ───
+function trTar(s){ if(!s) return ""; var p=String(s).split("-"); return p.length===3?p[2]+"."+p[1]+"."+p[0]:s; }
+function bakimExcel() {
+  var l = (DB.bakimlar||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  listeExcel("Bakım Raporu", ["No","Tarih","Plaka","Tür","Maliyet (TL)","Açıklama"],
+    l.map(function(b,i){ return [i+1, trTar(b.tarih), b.plaka||"", b.tur||"", (b.maliyet||0).toLocaleString("tr-TR"), b.not||b.aciklama||""]; }),
+    "Bakim_Raporu");
+}
+function mesaiExcel() {
+  var l = (DB.mesailer||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  listeExcel("Mesai Raporu", ["No","Tarih","Şoför","Başlangıç","Bitiş","Süre (saat)","Açıklama"],
+    l.map(function(m,i){ return [i+1, trTar(m.tarih), m.sofor||"", m.baslangic||"", m.bitis||"", ((m.sure_dakika||0)/60).toFixed(1), m.aciklama||""]; }),
+    "Mesai_Raporu");
+}
+function nakliyeExcel() {
+  var l = (DB.nakliyeler||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  listeExcel("Nakliye Raporu", ["No","Tarih","Sevk Adresi","Fiyat (TL)","Açıklama"],
+    l.map(function(n,i){ return [i+1, trTar(n.tarih), n.sevk_adresi||"", (n.fiyat||0).toLocaleString("tr-TR"), n.aciklama||""]; }),
+    "Nakliye_Raporu");
+}
+function kazaExcel() {
+  var l = (DB.kazalar||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  listeExcel("İş Kazası Raporu", ["No","Tarih","Kişi","Araç","Ağırlık","Açıklama"],
+    l.map(function(k,i){ return [i+1, trTar(k.tarih), k.kisi||"", k.arac||"", k.agirlik||"", k.aciklama||""]; }),
+    "Kaza_Raporu");
+}
+function seferExcel() {
+  var l = (DB.tamamlananlar||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  listeExcel("Sefer Raporu", ["No","Tarih","Şoför","Plaka","Çıkış","Varış","KM","Yük","Bekleme (dk)"],
+    l.map(function(s,i){ return [i+1, trTar(s.tarih), s.sofor||"", s.plaka||"", s.cikis_isim||"", s.varis_isim||"", (s.km_fark||0).toLocaleString("tr-TR"), (s.yuk_miktari?s.yuk_miktari+" "+(s.yuk_birimi||""):"")+(s.yuk_turu?" "+s.yuk_turu:""), s.bekleme_dakika||0]; }),
+    "Sefer_Raporu");
+}
+
 async function yakitRaporExcel() {
   var fBas = window.YAKIT_FILTRE_BAS || "";
   var fBit = window.YAKIT_FILTRE_BIT || "";
@@ -2772,6 +2868,7 @@ function renderBakimListe() {
 
   if(DB.bakimlar.length>0) {
     html+=`<div class="card"><div class="section-title">Bakım Geçmişi (${DB.bakimlar.length})</div>`;
+    if(KUL.rol==="admin" && DB.bakimlar.length>0) html+=`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="bakimExcel()">📥 Excel'e Aktar</button></div>`;
     DB.bakimlar.forEach(b=>{
       const gec=b.sonrakiTarih&&new Date(b.sonrakiTarih)<bugun;
       const yak=b.sonrakiTarih&&!gec&&(new Date(b.sonrakiTarih)-bugun)/(1000*60*60*24)<=30;
@@ -3717,6 +3814,8 @@ function renderMesaiListe() {
       </div>
     </div>`:""}
 
+    ${(KUL.rol==="admin"&&mesailer.length>0)?`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="mesaiExcel()">📥 Excel'e Aktar</button></div>`:""}
+
     ${mesailer.length===0?'<div class="empty"><div class="empty-icon">⏰</div>Mesai kaydı yok.</div>':""}
 
     ${mesailer.map(function(m) {
@@ -3987,6 +4086,8 @@ function renderNakliyeListe() {
       <div class="kpi-card"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a">${toplamTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam Maliyet</div></div>
     </div>`:""}
 
+    ${(KUL.rol==="admin"&&nakliyeler.length>0)?`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="nakliyeExcel()">📥 Excel'e Aktar</button></div>`:""}
+
     ${nakliyeler.length===0?'<div class="empty"><div class="empty-icon">🚚</div>Nakliye kaydı yok.</div>':""}
 
     ${nakliyeler.map(function(n) {
@@ -4117,6 +4218,8 @@ function renderKazaListe() {
       <div class="kpi-card"><div class="kpi-icon">⚠️</div><div class="kpi-val" style="color:#0a84ff">${kazalar.length}</div><div class="kpi-unit">adet</div><div class="kpi-label">Toplam Kaza</div></div>
       <div class="kpi-card"><div class="kpi-icon">🔴</div><div class="kpi-val" style="color:#ff453a">${agirSay}</div><div class="kpi-unit">adet</div><div class="kpi-label">Ağır Kaza</div></div>
     </div>`:""}
+
+    ${(KUL.rol==="admin"&&kazalar.length>0)?`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="kazaExcel()">📥 Excel'e Aktar</button></div>`:""}
 
     ${kazalar.length===0?'<div class="empty"><div class="empty-icon">⚠️</div>İş kazası kaydı yok.</div>':""}
 
