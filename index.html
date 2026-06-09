@@ -4205,6 +4205,7 @@ async function talepSorgula() {
         '<div style="font-size:13px;font-weight:700;color:#f2f2f7;margin-bottom:3px">📍 '+t.nereye+'</div>' +
         (t.departman?'<div style="font-size:11px;color:#636366">🏢 '+t.departman+'</div>':'') +
         (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':'') +
+        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="margin-top:8px;background:#ff453a18;border:1px solid #ff453a55;border-radius:8px;padding:8px;font-size:12px;color:#ff453a"><b>Red Gerekçesi:</b> '+t.red_nedeni+'</div>':'') +
         '</div>';
     });
     document.getElementById("sorgula-sonuc").innerHTML = html;
@@ -4313,6 +4314,7 @@ function renderTalepler() {
         '<div style="font-size:12px;color:#aeaeb2">🏢 '+t.departman+'  •  📍 '+t.nereye+'</div>' +
         '<div style="font-size:11px;color:#636366">📅 '+t.tarih+' • 🕐 '+t.saat+'</div>' +
         (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':"") +
+        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="font-size:11px;color:#ff453a;margin-top:4px">🚫 Red: '+t.red_nedeni+'</div>':"") +
         '</div>' +
         '<span class="badge '+badgeClass+'">'+t.durum+'</span>' +
         '</div>' +
@@ -4363,10 +4365,17 @@ async function talepOnayla(id) {
 }
 
 async function talepReddet(id) {
-  try { await talepDurumGuncelleDB(id, "Reddedildi"); } catch(e) {}
-  DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Reddedildi"}):t; });
+  var neden = prompt("Red gerekçesi (talep sahibi görecek):", "");
+  if(neden===null) return; // iptal edildi
+  neden = neden.trim();
+  try { await talepReddetDB(id, neden); } catch(e) {}
+  DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Reddedildi", red_nedeni:neden}):t; });
   showToast("Talep reddedildi.");
   renderTalepler();
+}
+
+async function talepReddetDB(id, neden) {
+  await supa.from('talepler').update({durum:"Reddedildi", red_nedeni:neden||""}).eq('id', id);
 }
 
 async function talepBekleyeAl(id) {
