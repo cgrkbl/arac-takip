@@ -4338,10 +4338,9 @@ async function talepOnayla(id) {
   DB.talepler = DB.talepler.map(function(t){ return t.id===id?Object.assign({},t,{durum:"Onaylandı"}):t; });
   // Onaylanan talebi otomatik iş listesine ekle
   if(talep) {
-    var bugun = bugunTR();
     var yeniIs = {
       kategori: talep.departman || "Diğer",
-      tarih: bugun,
+      tarih: talep.tarih || bugunTR(),
       firma: talep.nereye || "",
       miktar: "",
       oncelik: "Normal",
