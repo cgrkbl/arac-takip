@@ -124,24 +124,19 @@ textarea{resize:vertical;}
 .durum-tur{font-size:10px;color:#636366;text-transform:uppercase;letter-spacing:.8px;}
 .durum-val{font-size:12px;font-weight:600;margin-top:2px;}
 .dash-grid { display:grid; grid-template-columns:1fr; gap:12px; }
-.dash-panels { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-kpi-kolon { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 .dash-sol { display:flex; flex-direction:column; gap:12px; }
-.dash-row3 { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-row2 { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; }
 .dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
-.dash-panel-bos { height:170px; display:flex; align-items:center; justify-content:center; color:#5a6f8f; font-size:12px; border:1px dashed #5a4b7a; border-radius:10px; }
 .dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
 .dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
 .dash-kpi-val { font-size:20px; font-weight:800; line-height:1; }
 .dash-kpi-filtre { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
 @media (min-width:720px) {
   .dash-grid { grid-template-columns:3fr 1fr; align-items:start; }
-  .dash-panels { grid-template-columns:1fr 1fr; }
   .dash-kpi-kolon { display:flex; flex-direction:column; gap:10px; }
   .dash-kpi-kolon .dash-kpi-kart { height:72px; display:flex; flex-direction:column; justify-content:center; padding:12px 16px; }
-  .dash-row3 { grid-template-columns:1fr 1fr 1fr; }
   .dash-row2 { grid-template-columns:1fr 1fr; }
 }
 </style>
@@ -671,7 +666,6 @@ function tabSec(id) {
     case "nakliyeliste": renderNakliyeListe(); break;
     case "kaza":       renderKaza(); break;
     case "kazaliste":  renderKazaListe(); break;
-    case "maliyet":    renderMaliyetRaporu(); break;
     case "islistesi":   window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListesi(); break;
     case "islisteleme": window.IS_FILTRE_TARIH_MANUEL=false; window.IS_FILTRE_TARIH=null; renderIsListe(); break;
     case "excel":      renderExcel(); break;
@@ -1069,6 +1063,25 @@ function donemFiltre(arr, mod, alan) {
   alan = alan || "tarih";
   return arr.filter(function(x){ return x[alan]>=a.bas && x[alan]<=a.bit; });
 }
+// Bir aracın gerçek tüketimi (lt/100km) = alınan litre ÷ yapılan km × 100
+function aracTuketim(plaka, mod) {
+  var litre = donemFiltre(DB.yakitlar||[], mod).filter(function(y){ return y.plaka===plaka; })
+    .reduce(function(s,y){ return s+(parseFloat(y.litre)||0); }, 0);
+  var km = donemFiltre(DB.tamamlananlar||[], mod).filter(function(s){ return s.plaka===plaka; })
+    .reduce(function(s,x){ return s+(parseFloat(x.km_fark)||0); }, 0);
+  if(km<=0) return 0;
+  return litre/km*100;
+}
+// Bir aracın km başı yakıt maliyeti (TL/km) = (litre ÷ km) × litre fiyatı
+function aracTlKm(plaka, mod) {
+  var litre = donemFiltre(DB.yakitlar||[], mod).filter(function(y){ return y.plaka===plaka; })
+    .reduce(function(s,y){ return s+(parseFloat(y.litre)||0); }, 0);
+  var km = donemFiltre(DB.tamamlananlar||[], mod).filter(function(s){ return s.plaka===plaka; })
+    .reduce(function(s,x){ return s+(parseFloat(x.km_fark)||0); }, 0);
+  if(km<=0) return 0;
+  var lf = parseFloat(DB.litreFiyati)||0;
+  return (litre/km)*lf;
+}
 // Bir alanı bir anahtara göre gruplar → [{etiket,deger}] (azalan)
 function grupla(kayitlar, anahtarFn, degerFn) {
   var g = {};
@@ -1152,13 +1165,12 @@ function renderKPI() {
   var sevkiyatSeferSayisi = tSefer;
   var sevkiyatYukMiktari = tYuk;
   // KM Birim Maliyet: dönemdeki yakıt tutarı / toplam km (TL/km)
-  // KM Birim Maliyet: her aracın (tüketim/100 × güncel litre fiyatı) değerinin basit ortalaması
+  // KM Birim Maliyet: her aracın gerçek TL/km değerinin (litre÷km×fiyat) basit ortalaması
   var lf = parseFloat(DB.litreFiyati)||0;
-  var tukAraclar = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; });
+  var aracTlKmList = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, filtreMod); }).filter(function(v){ return v>0; });
   var kmBirimMaliyet = null;
-  if(lf>0 && tukAraclar.length>0) {
-    var toplamBirim = tukAraclar.reduce(function(s,a){ return s + (parseFloat(a.tuketim)/100*lf); }, 0);
-    kmBirimMaliyet = toplamBirim / tukAraclar.length;
+  if(aracTlKmList.length>0) {
+    kmBirimMaliyet = aracTlKmList.reduce(function(s,v){ return s+v; }, 0) / aracTlKmList.length;
   }
   // Plan Gerçekleşen Uyum: seçili dönemdeki işlerden otomatik (tamamlanan / kararlı işler)
   var isData = DB.isler || [];
@@ -1280,9 +1292,9 @@ function kategoriCiz(aktif, mod) {
   } else if(aktif==="yakit") {
     cizAlanGrafik("kp-trend", aylikSeri("yakit",12), "#b39ddb", "rgba(126,87,194,0.45)");
     cizYatayBar("kp-sofor", grupla(donemFiltre(DB.yakitlar||[],mod), function(y){return y.sofor;}, function(y){return y.tutar||0;}), "#7e57c2");
-    var lfY = parseFloat(DB.litreFiyati)||0;
-    var tlkm = (DB.araclar||[]).filter(function(a){return parseFloat(a.tuketim)>0;})
-      .map(function(a){return {etiket:a.plaka, deger:Math.round(parseFloat(a.tuketim)/100*lfY*100)/100};})
+    var tlkm = (DB.araclar||[])
+      .map(function(a){return {etiket:a.plaka, deger:Math.round(aracTlKm(a.plaka,mod)*100)/100};})
+      .filter(function(x){return x.deger>0;})
       .sort(function(a,b){return b.deger-a.deger;});
     cizYatayBar("kp-arac", tlkm, "#7e57c2");
   } else if(aktif==="bakim") {
@@ -1295,7 +1307,6 @@ function kategoriCiz(aktif, mod) {
     cizYatayBar("kp-arac", grupla(donemFiltre(DB.nakliyeler||[],mod), function(n){return n.sevk_adresi||"Diğer";}, function(n){return n.fiyat||0;}), "#ab47bc");
   }
 }
-function kpiFiltreGuncelle(v) { window.KPI_SOFOR=v; renderKPI(); }
 function kpiMod(mod) { window.KPI_MOD=mod; renderKPI(); }
 
 // Tıklanan KPI kartına göre aktif kategoriyi değiştirir
@@ -1341,12 +1352,6 @@ function kategoriPanelleri(aktif) {
   var alt = '<div class="dash-row2"'+(altPaneller.length===1?' style="grid-template-columns:1fr 1fr"':'')+'>'+altPaneller.join("")+(altPaneller.length===1?'<div></div>':'')+'</div>';
   return ust+alt;
 }
-function kutu1Mod(mod) { window.KPI_KUTU1_MOD=mod; renderKPI(); }
-function kutu2Mod(mod) { window.KPI_KUTU2_MOD=mod; renderKPI(); }
-function kutu3Mod(mod) { window.KPI_KUTU3_MOD=mod; renderKPI(); }
-function kutu4Mod(mod) { window.KPI_KUTU4_MOD=mod; renderKPI(); }
-function kutu5Mod(mod) { window.KPI_KUTU5_MOD=mod; renderKPI(); }
-function kutu6Mod(mod) { window.KPI_KUTU6_MOD=mod; renderKPI(); }
 
 async function kpiDashGuncelle(alan, deger) {
   window.KPI_DASH = window.KPI_DASH || {depoDoluluk:"", planaUyum:"", isKazasi:""};
@@ -1359,27 +1364,8 @@ async function kpiDashGuncelle(alan, deger) {
   }
 }
 
-function kpiInputBoyut(el) {
-  var uzunluk = (el.value || "").length || 1;
-  el.style.width = (uzunluk + 0.5) + "ch";
-}
 
 // Haftalık değer hesaplayıcı: son N haftanın hafta-bazlı toplamını döndürür
-function kpiHaftalikMesai(haftaSayisi) {
-  var sonuc = [];
-  var simdi = new Date();
-  for(var w=haftaSayisi-1; w>=0; w--) {
-    var bitMs = simdi.getTime() - w*7*24*60*60*1000;
-    var basMs = bitMs - 7*24*60*60*1000;
-    var bas = new Date(basMs).toISOString().split("T")[0];
-    var bit = new Date(bitMs).toISOString().split("T")[0];
-    var dk = (DB.mesailer||[]).filter(function(m){return m.tarih>bas&&m.tarih<=bit;})
-      .reduce(function(a,m){return a+(m.sure_dakika||0);},0);
-    var haftaNo = haftaNumarasi(new Date(bitMs));
-    sonuc.push({label:"W"+haftaNo, deger:Math.round(dk/60)});
-  }
-  return sonuc;
-}
 
 function haftaNumarasi(d) {
   var onceki = new Date(Date.UTC(d.getFullYear(),0,1));
@@ -1388,109 +1374,12 @@ function haftaNumarasi(d) {
 }
 
 // Excel'e gömmek için donut grafik PNG'si üretir
-function donutPNG(veriler, renkler) {
-  var S = 2; // 2x çözünürlük (keskin)
-  var W = 220, H = 200;
-  var cv = document.createElement("canvas");
-  cv.width = W*S; cv.height = H*S;
-  var ctx = cv.getContext("2d");
-  ctx.scale(S,S);
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,W,H);
-  var toplam = veriler.reduce(function(a,v){ return a+v.deger; },0);
-  if(toplam===0) return cv.toDataURL("image/png");
-  var cx=70, cy=H/2, r=58;
-  var aci = -Math.PI/2;
-  veriler.forEach(function(v,i){
-    var dilim = (v.deger/toplam)*Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,aci,aci+dilim); ctx.closePath();
-    ctx.fillStyle = renkler[i%renkler.length]; ctx.fill();
-    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.stroke();
-    aci += dilim;
-  });
-  // orta delik
-  ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fillStyle="#ffffff"; ctx.fill();
-  // legend
-  var ly = 40;
-  ctx.textAlign = "left";
-  veriler.forEach(function(v,i){
-    ctx.fillStyle = renkler[i%renkler.length];
-    ctx.fillRect(145, ly, 12, 12);
-    ctx.fillStyle = "#333333"; ctx.font = "12px Arial";
-    var yuzde = toplam>0?Math.round(v.deger/toplam*100):0;
-    ctx.fillText(v.etiket+" %"+yuzde, 162, ly+10);
-    ly += 22;
-  });
-  return cv.toDataURL("image/png");
-}
 
 // Excel'e gömmek için dikey sütun grafik PNG'si üretir
-function barPNG(noktalar, renk) {
-  var S = 2;
-  var W = 360, H = 200;
-  var cv = document.createElement("canvas");
-  cv.width = W*S; cv.height = H*S;
-  var ctx = cv.getContext("2d");
-  ctx.scale(S,S);
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,W,H);
-  if(!noktalar || noktalar.length===0) return cv.toDataURL("image/png");
-  var padL=10, padR=10, padT=24, padB=24;
-  var max = Math.max.apply(null, noktalar.map(function(n){return n.deger;}));
-  if(max===0) max=1;
-  var n = noktalar.length;
-  var alanW = (W-padL-padR)/n;
-  var barW = alanW*0.6;
-  noktalar.forEach(function(nt,i){
-    var x = padL + i*alanW + (alanW-barW)/2;
-    var h = (nt.deger/max)*(H-padT-padB);
-    var y = H-padB-h;
-    ctx.fillStyle = renk;
-    ctx.fillRect(x, y, barW, h);
-    // değer
-    if(nt.deger>0){
-      ctx.fillStyle="#333333"; ctx.font="bold 10px Arial"; ctx.textAlign="center";
-      var et = nt.deger>=1000?(Math.round(nt.deger/100)/10)+"k":String(nt.deger);
-      ctx.fillText(et, x+barW/2, y-4);
-    }
-    // ay etiketi
-    ctx.fillStyle="#666666"; ctx.font="11px Arial"; ctx.textAlign="center";
-    ctx.fillText(nt.label, x+barW/2, H-8);
-  });
-  return cv.toDataURL("image/png");
-}
 
 // Belirli bir aracın (plaka) son N ayının km başı maliyeti
-function aracAylikKmMaliyet(plaka, ayN) {
-  var simdi = new Date();
-  var aylarKisa = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-  var lf = parseFloat(DB.litreFiyati)||0;
-  var sonuc = [];
-  for(var k=ayN-1; k>=0; k--) {
-    var d = new Date(simdi.getFullYear(), simdi.getMonth()-k, 1);
-    var onek = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
-    var litre = (DB.yakitlar||[]).filter(function(y){ return y.plaka===plaka && y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.litre||0); },0);
-    var km = (DB.tamamlananlar||[]).filter(function(s){ return s.plaka===plaka && s.tarih && s.tarih.startsWith(onek) && s.km_fark; }).reduce(function(a,s){ return a+(s.km_fark||0); },0);
-    var maliyet = km>0 ? (litre*lf)/km : null;
-    sonuc.push({ay:aylarKisa[d.getMonth()], yil:d.getFullYear(), litre:litre, km:km, maliyet:maliyet});
-  }
-  return sonuc;
-}
 
 // Son N ayın km başı maliyetini hesaplar: (o ay alınan litre × güncel fiyat) / o ay gidilen km
-function aylikKmMaliyet(ayN) {
-  var simdi = new Date();
-  var aylarKisa = ["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
-  var lf = parseFloat(DB.litreFiyati)||0;
-  var sonuc = [];
-  for(var k=ayN-1; k>=0; k--) {
-    var d = new Date(simdi.getFullYear(), simdi.getMonth()-k, 1);
-    var onek = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
-    var litre = (DB.yakitlar||[]).filter(function(y){ return y.tarih && y.tarih.startsWith(onek); }).reduce(function(a,y){ return a+(y.litre||0); },0);
-    var km = (DB.tamamlananlar||[]).filter(function(s){ return s.tarih && s.tarih.startsWith(onek) && s.km_fark; }).reduce(function(a,s){ return a+(s.km_fark||0); },0);
-    var maliyet = km>0 ? (litre*lf)/km : null;
-    sonuc.push({ay:aylarKisa[d.getMonth()], yil:d.getFullYear(), litre:litre, km:km, maliyet:maliyet});
-  }
-  return sonuc;
-}
 
 // Son N ayın aylık toplamını hesaplar. tip: 'km' | 'maliyet'
 function aylikSeri(tip, ayN) {
@@ -1657,118 +1546,11 @@ function cizAlanGrafik(canvasId, noktalar, cizgiRenk, dolguRenk) {
 }
 
 // Canvas'ta mini trend çizgisi çizip dataURL döndürür (Excel'e gömmek için)
-function miniTrendPNG(noktalar, renk) {
-  var W=300, H=180;
-  var cv = document.createElement("canvas");
-  cv.width=W; cv.height=H;
-  var ctx = cv.getContext("2d");
-  ctx.fillStyle = "#15233d";
-  ctx.fillRect(0,0,W,H);
-  if(!noktalar || noktalar.length<2) {
-    ctx.fillStyle="#5a6f8f"; ctx.font="14px Arial"; ctx.textAlign="center";
-    ctx.fillText("Veri yok", W/2, H/2);
-    return cv.toDataURL("image/png");
-  }
-  var degerler = noktalar.map(function(n){return n.deger;});
-  var max = Math.max.apply(null,degerler), min = Math.min.apply(null,degerler);
-  if(max===min){max=max+1;min=min-1;}
-  var padX=40, padY=40;
-  var step = (W-2*padX)/(noktalar.length-1);
-  function y(v){ return H-padY - ((v-min)/(max-min))*(H-2*padY); }
-  // çizgi
-  ctx.strokeStyle = renk; ctx.lineWidth=3; ctx.beginPath();
-  noktalar.forEach(function(n,i){
-    var px=padX+i*step, py=y(n.deger);
-    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
-  });
-  ctx.stroke();
-  // değer etiketleri ve hafta etiketleri
-  ctx.fillStyle="#fff"; ctx.font="bold 16px Arial"; ctx.textAlign="center";
-  noktalar.forEach(function(n,i){
-    var px=padX+i*step, py=y(n.deger);
-    ctx.fillText(String(n.deger), px, py-10);
-  });
-  ctx.fillStyle="#8fa3c4"; ctx.font="12px Arial";
-  noktalar.forEach(function(n,i){
-    var px=padX+i*step;
-    ctx.fillText(n.label, px, H-12);
-  });
-  return cv.toDataURL("image/png");
-}
 
 // Bir grafiği gizli canvas'a çizip PNG dataURL döndürür (Excel'e gömmek için)
-function grafikPng(cizFn, w, h) {
-  var cv = document.createElement("canvas");
-  cv.width = w; cv.height = h;
-  document.body.appendChild(cv);
-  var ctx = cv.getContext("2d");
-  ctx.fillStyle = "#ffffff"; ctx.fillRect(0,0,w,h);
-  try { cizFn(ctx, w, h); } catch(e) {}
-  var url = cv.toDataURL("image/png");
-  document.body.removeChild(cv);
-  return url;
-}
 // Excel donut grafiği (beyaz zemin, koyu yazı)
-function xlsPasta(ctx, W, H, veriler, renkler) {
-  var toplam = veriler.reduce(function(a,v){return a+v.deger;},0);
-  if(toplam===0) return;
-  var lejW = 150;
-  var cx = (W-lejW)/2, cy = H/2, r = Math.min(W-lejW,H)/2 - 10;
-  var aci = -Math.PI/2, dilimler=[];
-  veriler.forEach(function(v,i){
-    var d = v.deger/toplam*Math.PI*2;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,aci,aci+d); ctx.closePath();
-    ctx.fillStyle = renkler[i%renkler.length]; ctx.fill();
-    ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.stroke();
-    dilimler.push({orta:aci+d/2, yuzde:Math.round(v.deger/toplam*100)});
-    aci += d;
-  });
-  ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(cx,cy,r*0.55,0,Math.PI*2); ctx.fill();
-  ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="bold 13px Arial"; ctx.fillStyle="#222";
-  dilimler.forEach(function(s){ if(s.yuzde<5) return; var x=cx+Math.cos(s.orta)*r*0.78, y=cy+Math.sin(s.orta)*r*0.78; ctx.fillStyle="#fff"; ctx.fillText(s.yuzde+"%",x,y); });
-  // Lejant
-  var ly = 20, lx = W-lejW+10;
-  ctx.textAlign="left"; ctx.font="12px Arial";
-  veriler.forEach(function(v,i){
-    ctx.fillStyle=renkler[i%renkler.length]; ctx.fillRect(lx,ly,12,12);
-    ctx.fillStyle="#222"; ctx.fillText(v.etiket+"  %"+Math.round(v.deger/toplam*100), lx+18, ly+6);
-    ly += 22;
-  });
-}
 // Excel dikey bar (beyaz zemin)
-function xlsDikeyBar(ctx, W, H, noktalar, renk) {
-  if(!noktalar||!noktalar.length) return;
-  var padL=40, padR=15, padT=25, padB=30;
-  var max = Math.max.apply(null, noktalar.map(function(n){return n.deger;})); if(max===0) max=1;
-  var n = noktalar.length, bw = (W-padL-padR)/n*0.6, gap=(W-padL-padR)/n;
-  ctx.strokeStyle="#ddd"; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
-  noktalar.forEach(function(nt,i){
-    var x = padL + i*gap + (gap-bw)/2;
-    var bh = (nt.deger/max)*(H-padT-padB);
-    ctx.fillStyle=renk; ctx.fillRect(x, H-padB-bh, bw, bh);
-    ctx.fillStyle="#222"; ctx.textAlign="center"; ctx.font="9px Arial";
-    if(nt.deger>0) ctx.fillText(nt.deger>=1000?(nt.deger/1000).toFixed(1)+"k":nt.deger, x+bw/2, H-padB-bh-5);
-    ctx.fillStyle="#888"; ctx.fillText(nt.label, x+bw/2, H-padB+14);
-  });
-}
 // Excel yatay bar (beyaz zemin)
-function xlsYatayBar(ctx, W, H, veriler, renk) {
-  if(!veriler||!veriler.length) return;
-  veriler = veriler.slice(0,8);
-  var padL=110, padR=50, padT=10, padB=10;
-  var max = Math.max.apply(null, veriler.map(function(v){return v.deger;})); if(max===0) max=1;
-  var n=veriler.length, bh=(H-padT-padB)/n*0.65, gap=(H-padT-padB)/n;
-  veriler.forEach(function(v,i){
-    var y = padT + i*gap + (gap-bh)/2;
-    var bw = (v.deger/max)*(W-padL-padR);
-    ctx.fillStyle="#222"; ctx.textAlign="right"; ctx.font="11px Arial"; ctx.textBaseline="middle";
-    ctx.fillText(String(v.etiket).slice(0,16), padL-8, y+bh/2);
-    ctx.fillStyle=renk; ctx.fillRect(padL, y, bw, bh);
-    ctx.fillStyle="#222"; ctx.textAlign="left";
-    ctx.fillText(v.deger.toLocaleString("tr-TR"), padL+bw+6, y+bh/2);
-  });
-}
 
 async function kpiRaporExcel() {
   // Dönem filtresini renderKPI ile aynı mantıkla hesapla
@@ -1800,12 +1582,8 @@ async function kpiRaporExcel() {
   var bakTutar = bakimlar.reduce(function(a,b){ return a+(b.maliyet||0); },0);
   var toplamMaliyet = yakitTutar+nakTutar+bakTutar;
   var mesaiSaat = Math.round(mesailer.reduce(function(a,m){ return a+(m.sure_dakika||0); },0)/60);
-  var lfE = parseFloat(DB.litreFiyati)||0;
-  var tukAraclarE = (DB.araclar||[]).filter(function(a){ return parseFloat(a.tuketim)>0; });
-  var kmBirim = 0;
-  if(lfE>0 && tukAraclarE.length>0) {
-    kmBirim = tukAraclarE.reduce(function(s,a){ return s + (parseFloat(a.tuketim)/100*lfE); }, 0) / tukAraclarE.length;
-  }
+  var aracTlKmListE = (DB.araclar||[]).map(function(a){ return aracTlKm(a.plaka, filtreMod); }).filter(function(v){ return v>0; });
+  var kmBirim = aracTlKmListE.length>0 ? aracTlKmListE.reduce(function(s,v){return s+v;},0)/aracTlKmListE.length : 0;
   var isTamam = isler.filter(function(i){ return i.durum==="Tamamlandı"; }).length;
   var isOlmadi = isler.filter(function(i){ return i.durum==="Tamamlanamadı"; }).length;
   var planUyum = (isTamam+isOlmadi)>0 ? Math.round(isTamam/(isTamam+isOlmadi)*100) : null;
@@ -2029,25 +1807,6 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
   }
 }
 
-function kpiGrafikleriCiz(soforKm, soforBek, tKm, tBek) {
-  const RENKLER = ["#0a84ff","#30d158","#ff9f0a","#ff453a","#bf5af2","#32ade6","#ff6961","#ffd60a"];
-  
-  setTimeout(()=>{
-    const kmVeriler = Object.entries(soforKm).sort((a,b)=>b[1]-a[1]).map(([s,km])=>({
-      etiket: s.split(" ")[0],
-      deger: km,
-      yuzde: tKm>0?Math.round(km/tKm*100):0
-    }));
-    cizPastaGrafik("pie-km","pie-km-legend",kmVeriler,RENKLER);
-
-    const bekVeriler = Object.entries(soforBek).sort((a,b)=>b[1]-a[1]).map(([s,dk])=>({
-      etiket: s.split(" ")[0],
-      deger: dk,
-      yuzde: tBek>0?Math.round(dk/tBek*100):0
-    }));
-    cizPastaGrafik("pie-bek","pie-bek-legend",bekVeriler,RENKLER);
-  }, 100);
-}
 
 // ═══════════════════════════════════════════
 // LİSTE
@@ -2209,12 +1968,6 @@ function renderAraclar() {
       <div class="section-title">Yeni Araç Ekle</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <input type="text" id="yeni-plaka" placeholder="34 ABC 001" style="flex:1"/>
-      </div>
-      <div style="display:flex;gap:8px;align-items:flex-end">
-        <div class="field" style="flex:1;margin:0">
-          <label style="font-size:11px;color:#aeaeb2">Tüketim (100 km'de litre)</label>
-          <input type="number" id="yeni-tuketim" placeholder="32" step="any"/>
-        </div>
         <button class="btn btn-green" style="width:auto;padding:10px 16px;white-space:nowrap" onclick="aracEkle()">+ Ekle</button>
       </div>
     </div>
@@ -2223,13 +1976,14 @@ function renderAraclar() {
       ${DB.araclar.map(a=>{
         const kullanan = DB.aktifSeferler.find(s=>s.plaka===a.plaka);
         const say = DB.tamamlananlar.filter(s=>s.plaka===a.plaka).length;
+        const otoTuk = aracTuketim(a.plaka, "tumu");
         return `<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid ${kullanan?"#ff9f0a66":"#48484a"};margin-bottom:8px">
           <span style="font-size:20px">🚗</span>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${a.plaka}</div>
             <div style="font-size:11px;color:#636366">${say} sefer tamamlandı</div>
-            <div style="font-size:11px;color:#aeaeb2;margin-top:4px;display:flex;align-items:center;gap:4px">
-              ⛽ <input type="number" value="${a.tuketim||""}" placeholder="—" step="any" onchange="aracTuketimGuncelle(${a.id}, this.value)" style="width:55px;background:#2c2c2e;border:1px solid #48484a;border-radius:6px;color:#f2f2f7;font-size:11px;padding:2px 6px;text-align:center"/> lt/100km
+            <div style="font-size:11px;color:#aeaeb2;margin-top:4px">
+              ⛽ ${otoTuk>0?otoTuk.toFixed(1)+" lt/100km":"<span style='color:#636366'>veri bekleniyor</span>"}
             </div>
           </div>
           <span class="badge ${kullanan?"badge-orange":"badge-green"}">${kullanan?kullanan.sofor+" - Yolda":"Müsait"}</span>
@@ -2243,24 +1997,14 @@ function renderAraclar() {
 
 async function aracEkle() {
   const pl = document.getElementById("yeni-plaka").value.trim().toUpperCase();
-  const tuk = parseFloat(document.getElementById("yeni-tuketim").value) || null;
   if(!pl) { showToast("Plaka girin!","error"); return; }
   if(DB.araclar.find(a=>a.plaka===pl)) { showToast("Bu plaka zaten var!","error"); return; }
   try {
-    const data = await aracEkleDB(pl, tuk);
+    const data = await aracEkleDB(pl);
     DB.araclar.push(data);
     showToast(pl+" eklendi!");
     renderAraclar();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
-}
-
-async function aracTuketimGuncelle(id, deger) {
-  const tuk = parseFloat(deger) || null;
-  try {
-    await supa.from('araclar').update({tuketim:tuk}).eq('id',id);
-    DB.araclar = DB.araclar.map(function(a){ return a.id===id ? Object.assign({},a,{tuketim:tuk}) : a; });
-    showToast("Tüketim güncellendi.");
-  } catch(e) { showToast("Hata: "+(e.message||"güncellenemedi"),"error"); }
 }
 
 async function aracSil(id) {
@@ -3486,8 +3230,8 @@ async function soforEkleDB(sofor) {
 }
 async function soforSilDB(isim) { await supa.from('soforler').delete().eq('isim',isim); }
 async function soforPinGuncelleDB(isim,pin) { await supa.from('soforler').update({pin}).eq('isim',isim); }
-async function aracEkleDB(plaka, tuketim) {
-  const {data,error} = await supa.from('araclar').insert({plaka, tuketim: tuketim||null}).select().single();
+async function aracEkleDB(plaka) {
+  const {data,error} = await supa.from('araclar').insert({plaka}).select().single();
   if(error) throw error; return data;
 }
 async function aracSilDB(id) { await supa.from('araclar').delete().eq('id',id); }
@@ -3590,24 +3334,6 @@ async function ayarKaydetDB(anahtar,deger) {
 async function litreFiyatiGuncelleDB(deger) { await supa.from('ayarlar').update({deger}).eq('anahtar','litre_fiyati'); }
 
 
-function dbKaydet() {
-  try {
-    localStorage.setItem("kucuker_db", JSON.stringify({
-      soforler: DB.soforler,
-      araclar: DB.araclar,
-      konumlar: DB.konumlar,
-      fabrika: DB.fabrika,
-      aktifSeferler: DB.aktifSeferler,
-      tamamlananlar: DB.tamamlananlar,
-      yakitlar: DB.yakitlar,
-      bakimlar: DB.bakimlar,
-      isler: DB.isler,
-      litreFiyati: DB.litreFiyati,
-      adminPin: ADMIN_PIN,
-      yakitPin: YAKIT_PIN,
-    }));
-  } catch(e) { }
-}
 
 
 // ═══════════════════════════════════════════
@@ -4074,129 +3800,6 @@ function mesaiHizliFiltre(gun) {
 // ═══════════════════════════════════════════
 // MALİYET RAPORU
 // ═══════════════════════════════════════════
-function renderMaliyetRaporu() {
-  var simdi = new Date();
-  var bugunStr = bugunTR();
-  var ayBas = simdi.getFullYear()+"-"+String(simdi.getMonth()+1).padStart(2,"0")+"-01";
-
-  var filtreBas = window.MAL_BAS || ayBas;
-  var filtreBit = window.MAL_BIT || bugunStr;
-  var filtreMod = window.MAL_MOD || "tarih";
-  window.MAL_BAS = filtreBas;
-  window.MAL_BIT = filtreBit;
-  window.MAL_MOD = filtreMod;
-
-  // Yıllar ve aylar için seçenekler
-  var yillar = [...new Set([
-    ...DB.yakitlar.map(y=>y.tarih.substring(0,4)),
-    ...DB.nakliyeler.map(n=>n.tarih.substring(0,4)),
-    String(simdi.getFullYear())
-  ])].sort((a,b)=>b-a);
-
-  var aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-
-  function hesapla(bas, bit) {
-    var yakitlar = DB.yakitlar.filter(y=>y.tarih>=bas&&y.tarih<=bit);
-    var nakliyeler = DB.nakliyeler.filter(n=>n.tarih>=bas&&n.tarih<=bit);
-    var bakimlar = DB.bakimlar.filter(b=>b.tarih>=bas&&b.tarih<=bit&&b.maliyet>0);
-    var yakitTutar = yakitlar.reduce((a,y)=>a+(y.tutar||0),0);
-    var nakliyeTutar = nakliyeler.reduce((a,n)=>a+(n.fiyat||0),0);
-    var bakimTutar = bakimlar.reduce((a,b)=>a+(b.maliyet||0),0);
-    var toplam = yakitTutar + nakliyeTutar + bakimTutar;
-    return {yakitlar, nakliyeler, bakimlar, yakitTutar, nakliyeTutar, bakimTutar, toplam};
-  }
-
-  var rapor = hesapla(filtreBas, filtreBit);
-
-  setContent(`
-    <div class="card">
-      <div class="section-title">TARİH ARALIĞI</div>
-      <div class="row" style="margin-bottom:8px">
-        <div class="field"><label>Başlangıç</label><input type="date" value="${filtreBas}" onchange="maliyetTarih('bas',this.value)"/></div>
-        <div class="field"><label>Bitiş</label><input type="date" value="${filtreBit}" onchange="maliyetTarih('bit',this.value)"/></div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="maliyetHizli(7)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 7 Gün</button>
-        <button onclick="maliyetHizli(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="maliyetHizli('ay')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bu Ay</button>
-        <button onclick="maliyetHizli('yil')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bu Yıl</button>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
-      <div class="kpi-card"><div class="kpi-icon">⛽</div><div class="kpi-val" style="color:#30d158;font-size:16px">${rapor.yakitTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Yakıt</div></div>
-      <div class="kpi-card"><div class="kpi-icon">🚚</div><div class="kpi-val" style="color:#0a84ff;font-size:16px">${rapor.nakliyeTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Nakliye</div></div>
-      <div class="kpi-card"><div class="kpi-icon">🔧</div><div class="kpi-val" style="color:#bf5af2;font-size:16px">${rapor.bakimTutar.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Bakım</div></div>
-      <div class="kpi-card" style="border:1px solid #ff9f0a44"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#ff9f0a;font-size:16px">${rapor.toplam.toLocaleString("tr-TR")}</div><div class="kpi-unit">TL</div><div class="kpi-label">Toplam</div></div>
-    </div>
-
-    ${rapor.toplam>0?`
-    <div class="card" style="margin-bottom:12px">
-      <div class="section-title">MALİYET DAĞILIMI</div>
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-          <span style="color:#aeaeb2">⛽ Yakıt</span>
-          <span style="color:#30d158">${rapor.yakitTutar.toLocaleString("tr-TR")} TL (${rapor.toplam>0?Math.round(rapor.yakitTutar/rapor.toplam*100):0}%)</span>
-        </div>
-        <div class="bar-wrap"><div class="bar" style="width:${rapor.toplam>0?rapor.yakitTutar/rapor.toplam*100:0}%;background:#30d158"></div></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-          <span style="color:#aeaeb2">🚚 Nakliye</span>
-          <span style="color:#0a84ff">${rapor.nakliyeTutar.toLocaleString("tr-TR")} TL (${rapor.toplam>0?Math.round(rapor.nakliyeTutar/rapor.toplam*100):0}%)</span>
-        </div>
-        <div class="bar-wrap"><div class="bar" style="width:${rapor.toplam>0?rapor.nakliyeTutar/rapor.toplam*100:0}%;background:#0a84ff"></div></div>
-      </div>
-      ${rapor.bakimTutar>0?`<div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-          <span style="color:#aeaeb2">🔧 Bakım</span>
-          <span style="color:#bf5af2">${rapor.bakimTutar.toLocaleString("tr-TR")} TL (${rapor.toplam>0?Math.round(rapor.bakimTutar/rapor.toplam*100):0}%)</span>
-        </div>
-        <div class="bar-wrap"><div class="bar" style="width:${rapor.toplam>0?rapor.bakimTutar/rapor.toplam*100:0}%;background:#bf5af2"></div></div>
-      </div>`:""}
-    </div>`:""}
-
-    ${rapor.yakitlar.length>0?`
-    <div class="card">
-      <div class="section-title">YAKIT DETAYI (${rapor.yakitlar.length} kayıt)</div>
-      ${rapor.yakitlar.map(y=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #3a3a3c;font-size:12px"><div><div style="color:#f2f2f7">'+y.sofor+'</div><div style="color:#636366">'+y.tarih+' • '+y.plaka+'</div></div><span style="color:#30d158;font-weight:700">'+y.tutar.toLocaleString("tr-TR")+' TL</span></div>').join('')}
-    </div>`:""}
-
-    ${rapor.nakliyeler.length>0?`
-    <div class="card">
-      <div class="section-title">NAKLİYE DETAYI (${rapor.nakliyeler.length} kayıt)</div>
-      ${rapor.nakliyeler.map(n=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #3a3a3c;font-size:12px"><div><div style="color:#f2f2f7">'+n.sevk_adresi+'</div><div style="color:#636366">'+n.tarih+'</div></div><span style="color:#0a84ff;font-weight:700">'+n.fiyat.toLocaleString("tr-TR")+' TL</span></div>').join('')}
-    </div>`:""}
-
-    ${rapor.bakimlar.length>0?`
-    <div class="card">
-      <div class="section-title">BAKIM DETAYI (${rapor.bakimlar.length} kayıt)</div>
-      ${rapor.bakimlar.map(function(b){ return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #3a3a3c;font-size:12px"><div><div style="color:#f2f2f7">'+b.plaka+' — '+b.tur+'</div><div style="color:#636366">'+b.tarih+(b.not?' • '+b.not:'')+'</div></div><span style="color:#bf5af2;font-weight:700">'+b.maliyet.toLocaleString('tr-TR')+' TL</span></div>'; }).join('')}
-    </div>`:""}
-    <div style="height:20px"></div>
-  `);
-}
-
-function maliyetMod(mod) { window.MAL_MOD=mod; renderMaliyetRaporu(); }
-function maliyetTarih(tip,v) { if(tip==="bas") window.MAL_BAS=v; else window.MAL_BIT=v; renderMaliyetRaporu(); }
-function maliyetHizli(gun) {
-  var bugun = bugunTR();
-  if(gun==='ay') {
-    var s=new Date(); window.MAL_BAS=s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-01"; window.MAL_BIT=bugun;
-  } else if(gun==='yil') {
-    window.MAL_BAS=new Date().getFullYear()+"-01-01"; window.MAL_BIT=bugun;
-  } else {
-    window.MAL_BIT=bugun; window.MAL_BAS=new Date(Date.now()-gun*24*60*60*1000).toISOString().split("T")[0];
-  }
-  renderMaliyetRaporu();
-}
-function maliyetAySec(yil,ay) {
-  var ayStr = String(ay).padStart(2,"0");
-  var sonGun = new Date(yil,ay,0).getDate();
-  window.MAL_BAS=yil+"-"+ayStr+"-01";
-  window.MAL_BIT=yil+"-"+ayStr+"-"+sonGun;
-  renderMaliyetRaporu();
-}
 
 async function maliyetExcel() {
   var bas = window.MAL_BAS || bugunTR();
@@ -4603,17 +4206,7 @@ function talepTab(tab) {
   }
 }
 
-function talepSorgulaGoster() {
-  document.getElementById("login-screen").style.display = "none";
-  document.getElementById("sorgula-screen").style.display = "flex";
-  document.getElementById("sorgula-sonuc").innerHTML = "";
-  document.getElementById("s-isim").value = "";
-}
 
-function talepSorgulaGizle() {
-  document.getElementById("sorgula-screen").style.display = "none";
-  document.getElementById("login-screen").style.display = "flex";
-}
 
 async function talepSorgula() {
   var isim = document.getElementById("s-isim").value.trim();
