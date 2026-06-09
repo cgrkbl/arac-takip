@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Küçüker Lojistik"/>
 <meta name="theme-color" content="#1c1c1e"/>
@@ -307,7 +307,7 @@ textarea{resize:vertical;}
 let ADMIN_PIN = "1234";
 let YAKIT_PIN = "0000";
 const YUKLER = ["Ham Kumaş","Boyalı Kumaş","İplik","Aksesuar","Mamul Ürün","Ambalaj Malzemesi","Kimyasal Madde","Diğer"];
-const BAKIM_TURLERI = ["Muayene","Sigorta","Bakım","Lastik"];
+const BAKIM_TURLERI = ["Muayene","Sigorta","Bakım","Lastik","Tamir"];
 
 // Logo base64 - sonradan yüklenecek
 const LOGO_B64 = "/icon.png";
@@ -1340,7 +1340,7 @@ function kategoriPanelleri(aktif) {
     if(!baslik) return "";
     h = h || 200;
     var span = genis ? ' style="grid-column:span 2"' : '';
-    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;gap:12px;min-height:195px"><canvas id="'+id+'" width="'+(genis?320:170)+'" height="180"></canvas><div id="'+id+'-legend" style="flex:1;font-size:12px"></div></div></div>';
+    if(tip==="pie") return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><div style="display:flex;align-items:center;justify-content:center;gap:12px;min-height:195px;flex-wrap:wrap"><canvas id="'+id+'" width="'+(genis?320:170)+'" height="180" style="max-width:100%;height:auto"></canvas><div id="'+id+'-legend" style="flex:1;min-width:120px;font-size:12px"></div></div></div>';
     return '<div class="dash-panel"'+span+'><div class="dash-panel-bas">'+baslik+'</div><canvas id="'+id+'" width="640" height="'+h+'" style="width:100%;height:'+h+'px"></canvas></div>';
   }
   // Üst sıra: geniş trend grafiği
