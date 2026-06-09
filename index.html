@@ -2464,7 +2464,14 @@ async function listeExcel(baslik, sutunlar, satirlar, dosyaAdi) {
   satirlar.forEach(function(row, ri){
     ws.getRow(R).height=16;
     for(var ci=0;ci<KOL;ci++){
-      var dc=ws.getCell(R,2+ci); dc.value=row[ci];
+      var dc=ws.getCell(R,2+ci);
+      var hucre=row[ci];
+      var baslik=(sutunlar[ci]||"").toLowerCase();
+      var sayiSutun = baslik.indexOf("tl")>=0 || baslik.indexOf("fiyat")>=0 || baslik.indexOf("tutar")>=0 || baslik.indexOf("maliyet")>=0 || baslik.indexOf("km")>=0;
+      if(sayiSutun && typeof hucre==="string" && /\d/.test(hucre)) {
+        var sayi=parseFloat(hucre.replace(/\./g,"").replace(",","."));
+        if(!isNaN(sayi)) { dc.value=sayi; dc.numFmt="#,##0"; } else dc.value=hucre;
+      } else dc.value=hucre;
       dc.font={name:"Arial",size:10,color:{argb:"FF222222"}};
       if(ri%2===1) dc.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}};
       dc.alignment={horizontal: ci===0?"center":"left", vertical:"middle"};
