@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Küçüker Lojistik"/>
 <meta name="theme-color" content="#1c1c1e"/>
@@ -405,6 +405,15 @@ function setContent(html) {
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
+function zoomKapat() {
+  var m = document.getElementById("viewport-meta");
+  if(m) m.setAttribute("content", "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no");
+}
+function zoomAc() {
+  var m = document.getElementById("viewport-meta");
+  if(m) m.setAttribute("content", "width=device-width, initial-scale=1.0");
+}
+
 function loginMod(mod) {
   LOGIN_MOD = mod;
   PIN = "";
@@ -495,6 +504,7 @@ async function girisYap(kul) {
   sessionStorage.setItem("aktif_tab", AKTIF_TAB);
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app").style.display = "block";
+  zoomAc(); // uygulama içinde zoom serbest
   // Giriş sonrası yükle
   showToast("Veriler yükleniyor...");
   await dbYukle();
@@ -523,6 +533,7 @@ function logout() {
   sessionStorage.removeItem("kul");
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
+  zoomKapat(); // login ekranında zoom kapalı
   document.getElementById("login-buttons").style.display = "block";
   document.getElementById("login-form").style.display = "none";
   PIN = "";
@@ -4230,6 +4241,7 @@ async function talepSorgula() {
 function talepEkraniGoster() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("talep-screen").style.display = "flex";
+  zoomAc(); // talep formunda zoom serbest
   // Tarih ve saati otomatik doldur
   var simdi = new Date();
   var yil = simdi.getFullYear();
@@ -4263,6 +4275,7 @@ function talепYeniGonder() {
 function talepEkraniGizle() {
   document.getElementById("talep-screen").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
+  zoomKapat(); // login ekranında zoom kapalı
 }
 
 async function talепGonder() {
@@ -4437,6 +4450,8 @@ window.addEventListener("load", async ()=>{
       return;
     } catch(e) { sessionStorage.removeItem("kul"); }
   }
+  // Oturum yok: login ekranındayız, zoom kapalı olsun
+  zoomKapat();
 
   if('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/arac-takip/sw.js').catch(()=>{});
