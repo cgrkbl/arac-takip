@@ -627,6 +627,13 @@ function renderSoforTabBar() {
 function tabSec(id) {
   AKTIF_TAB = id;
   sessionStorage.setItem("aktif_tab", id);
+  // Talepler ekranı için otomatik yenileme: bu ekrandayken her 15 sn'de bir kontrol et
+  if(window._talepInterval) { clearInterval(window._talepInterval); window._talepInterval = null; }
+  if(id==="talepler") {
+    window._talepInterval = setInterval(function(){
+      if(AKTIF_TAB==="talepler") talepleriTazele(); else { clearInterval(window._talepInterval); window._talepInterval=null; }
+    }, 15000);
+  }
   // tab bar güncelle
   document.querySelectorAll(".tab-btn").forEach(b=>{
     b.classList.toggle("active", b.textContent.trim().startsWith(
