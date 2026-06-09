@@ -589,17 +589,22 @@ function altMenuSec(menu) {
 function renderAkordeon() {
   var basHtml = DIGER_MODULLER.map(function(mod){
     var acik = window.AKR_ACIK===mod.id;
-    return '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')">'+
+    var bekSay = (mod.id==="talep-mod") ? DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length : 0;
+    return '<div class="akr-bas '+(acik?"acik":"")+'" onclick="akrToggle(\''+mod.id+'\')" style="position:relative">'+
       '<span class="akr-ikon">'+mod.ikon+'</span>'+
       '<span class="akr-baslik">'+mod.baslik+'</span>'+
+      (bekSay>0?'<span style="background:#ff453a;color:#fff;border-radius:10px;min-width:17px;height:17px;padding:0 5px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:5px">'+bekSay+'</span>':'')+
     '</div>';
   }).join("");
 
   var acikMod = DIGER_MODULLER.find(function(m){return m.id===window.AKR_ACIK;}) || DIGER_MODULLER[0];
   var panelHtml = '<div class="akr-panel">' + acikMod.alt.map(function(a){
     var aktif = AKTIF_TAB===a.id;
-    return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')">'+
-      '<span>'+a.ikon+'</span><span>'+a.label+'</span></div>';
+    var bekSay = (a.id==="talepler") ? DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length : 0;
+    return '<div class="akr-alt-btn '+(aktif?"aktif":"")+'" onclick="akrSec(\''+a.id+'\')" style="position:relative">'+
+      '<span>'+a.ikon+'</span><span>'+a.label+'</span>'+
+      (bekSay>0?'<span style="background:#ff453a;color:#fff;border-radius:10px;min-width:18px;height:18px;padding:0 5px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:6px">'+bekSay+'</span>':'')+
+      '</div>';
   }).join("") + '</div>';
 
   document.getElementById("akordeon").innerHTML = '<div class="akr-bar">'+basHtml+'</div>'+panelHtml;
@@ -4324,8 +4329,8 @@ async function talepleriTazele() {
         var fark = yeniBekleyen - eskiBekleyen;
         showToast("🚗 "+fark+" yeni araç talebi geldi!");
         talepBipCal();
-        // Sekme çubuğunu tazele (rozet güncellensin) - talepler ekranında değilsek bile
-        if(typeof renderTabBar==="function" && AKTIF_MENU) try { altMenuSec(AKTIF_MENU); } catch(e){}
+        // Rozet güncellensin (sekmeyi sıfırlamadan)
+        if(AKTIF_MENU==="diger" && typeof renderAkordeon==="function") try { renderAkordeon(); } catch(e){}
       }
       window._talepIlkYukleme = true;
       // Veri değiştiyse ve hâlâ talepler ekranındaysak yeniden çiz (sonsuz döngüye girmeden)
