@@ -3017,8 +3017,68 @@ async function bakimSil(id) {
 // ═══════════════════════════════════════════
 // AYARLAR
 // ═══════════════════════════════════════════
+async function tumVeriYedekle() {
+  showToast("Yedek hazırlanıyor...");
+  var wb = new ExcelJS.Workbook();
+  var KOYU="FF0F2147", BEYAZ="FFFFFFFF";
+  var ince={style:"thin",color:{argb:"FFBFBFBF"}};
+  function sayfaEkle(ad, basliklar, satirlar) {
+    var ws = wb.addWorksheet(ad.slice(0,30), {views:[{showGridLines:false}]});
+    basliklar.forEach(function(b,i){
+      ws.getColumn(i+1).width = 18;
+      var c=ws.getCell(1,i+1); c.value=b;
+      c.font={name:"Arial",bold:true,size:10,color:{argb:BEYAZ}};
+      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:KOYU}};
+      c.alignment={horizontal:"center"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
+    });
+    satirlar.forEach(function(row,ri){
+      row.forEach(function(v,ci){
+        var c=ws.getCell(ri+2,ci+1); c.value=v;
+        c.font={name:"Arial",size:10}; c.alignment={vertical:"middle",wrapText:true};
+        c.border={top:ince,bottom:ince,left:ince,right:ince};
+      });
+    });
+  }
+  // Her tablo
+  sayfaEkle("Seferler", ["Tarih","Şoför","Plaka","Çıkış","Varış","KM","Yük","Birim","Tür","Bekleme(dk)","Durum"],
+    (DB.tamamlananlar||[]).map(function(s){return [s.tarih,s.sofor,s.plaka,s.cikis_isim,s.varis_isim,s.km_fark,s.yuk_miktari,s.yuk_birimi,s.yuk_turu,s.bekleme_dakika,s.durum];}));
+  sayfaEkle("Yakit", ["Tarih","Saat","Şoför","Plaka","Litre","Tutar","Kaydeden"],
+    (DB.yakitlar||[]).map(function(y){return [y.tarih,y.saat,y.sofor,y.plaka,y.litre,y.tutar,y.kaydeden];}));
+  sayfaEkle("Bakim", ["Tarih","Plaka","Tür","Sonraki Tarih","KM","Maliyet","Açıklama"],
+    (DB.bakimlar||[]).map(function(b){return [b.tarih,b.plaka,b.tur,b.sonraki_tarih,b.km,b.maliyet,b.not||b.aciklama];}));
+  sayfaEkle("Nakliye", ["Tarih","Sevk Adresi","Fiyat","Açıklama"],
+    (DB.nakliyeler||[]).map(function(n){return [n.tarih,n.sevk_adresi,n.fiyat,n.aciklama];}));
+  sayfaEkle("Isler", ["Tarih","Kategori","Firma","Miktar","Öncelik","Durum","Kaynak","Açıklama"],
+    (DB.isler||[]).map(function(i){return [i.tarih,i.kategori,i.firma,i.miktar,i.oncelik,i.durum,i.kaynak,i.not];}));
+  sayfaEkle("Talepler", ["Tarih","Saat","İsim","Departman","Nereye","Durum","Red Nedeni","Açıklama"],
+    (DB.talepler||[]).map(function(t){return [t.tarih,t.saat,t.isim,t.departman,t.nereye,t.durum,t.red_nedeni,t.aciklama];}));
+  sayfaEkle("Kazalar", ["Tarih","Kişi","Araç","Ağırlık","Açıklama"],
+    (DB.kazalar||[]).map(function(k){return [k.tarih,k.kisi,k.arac,k.agirlik,k.aciklama];}));
+  sayfaEkle("Mesailer", ["Tarih","Şoför","Başlangıç","Bitiş","Süre(dk)","Açıklama"],
+    (DB.mesailer||[]).map(function(m){return [m.tarih,m.sofor,m.baslangic,m.bitis,m.sure_dakika,m.aciklama];}));
+  sayfaEkle("Araclar", ["Plaka"], (DB.araclar||[]).map(function(a){return [a.plaka];}));
+  sayfaEkle("Konumlar", ["İsim","Adres","Enlem","Boylam"],
+    (DB.konumlar||[]).map(function(k){return [k.isim,k.adres,k.lat,k.lng];}));
+  sayfaEkle("Soforler", ["İsim"], (DB.soforler||[]).map(function(s){return [s.isim||s.ad||s];}));
+  try {
+    var buffer = await wb.xlsx.writeBuffer();
+    var blob = new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url=URL.createObjectURL(blob); var a=document.createElement("a");
+    a.href=url; a.download="Kucuker_Yedek_"+bugunTR()+".xlsx";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    showToast("Yedek indirildi!");
+  } catch(e){ showToast("Hata: "+(e.message||"yedeklenemedi"),"error"); }
+}
+
 function renderAyarlar() {
   setContent(`
+    <div class="card">
+      <div class="section-title">💾 Veri Yedekleme</div>
+      <div style="font-size:12px;color:#aeaeb2;margin-bottom:10px">Tüm verileri (sefer, yakıt, bakım, nakliye, iş, talep, kaza, mesai, araç, konum, şoför) tek Excel dosyasına indirir. Düzenli yedek almanız önerilir.</div>
+      <button class="btn btn-green" onclick="tumVeriYedekle()">💾 Tüm Verileri Yedekle (Excel)</button>
+    </div>
+
     <div class="card">
       <div class="section-title">Yönetici PIN Değiştir</div>
       <div style="display:flex;flex-direction:column;gap:8px">
