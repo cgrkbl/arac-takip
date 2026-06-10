@@ -547,18 +547,26 @@ async function girisYap(kul) {
     kul.rol==="admin" ? "🔑 Yönetici" :
     kul.rol==="yakit" ? "⛽ Yakıt Personeli" : "🧑‍✈️ "+kul.isim;
 
+  // Önceki oturumdan kalan arka plan işlerini durdur
+  if(window._talepGlobalInterval) { clearInterval(window._talepGlobalInterval); window._talepGlobalInterval = null; }
+  if(window._talepInterval) { clearInterval(window._talepInterval); window._talepInterval = null; }
+  // Akordeon ve içeriği temizle (rol geçişlerinde kalıntı olmasın)
+  var akrEl = document.getElementById("akordeon"); if(akrEl) akrEl.innerHTML = "";
+  var contentEl = document.getElementById("content"); if(contentEl) contentEl.classList.remove("kpi-genis");
+
   if(kul.rol==="admin") {
     document.getElementById("bottom-nav").style.display = "flex";
     altMenuSec("ana");
     // Yeni talep bildirimi için arka planda sürekli kontrol (her sayfada)
     window._talepIlkYukleme = true;
-    if(window._talepGlobalInterval) clearInterval(window._talepGlobalInterval);
     window._talepGlobalInterval = setInterval(function(){ if(KUL && KUL.rol==="admin") talepleriTazele(); }, 20000);
   } else if(kul.rol==="yakit") {
+    AKTIF_MENU = "yakit-personeli";
     document.getElementById("bottom-nav").style.display = "none";
     renderTabBar([{id:"yakit",label:"⛽ Yakıt Girişi"},{id:"yakitliste",label:"📋 Yakıt Listesi"}]);
     tabSec("yakit");
   } else {
+    AKTIF_MENU = "sofor";
     document.getElementById("bottom-nav").style.display = "none";
     renderSoforTabBar();
     tabSec("cikis");
@@ -569,10 +577,24 @@ async function girisYap(kul) {
 
 function logout() {
   KUL = null;
+  // Oturum ve durum verilerini tamamen temizle
   sessionStorage.removeItem("kul");
+  sessionStorage.removeItem("aktif_menu");
+  sessionStorage.removeItem("aktif_tab");
+  AKTIF_MENU = "ana";
+  AKTIF_TAB = "rapor";
+  // Arka plan intervallerini durdur (admin talep bildirimi vb.)
+  if(window._talepGlobalInterval) { clearInterval(window._talepGlobalInterval); window._talepGlobalInterval = null; }
+  if(window._talepInterval) { clearInterval(window._talepInterval); window._talepInterval = null; }
+  // Yönetici içeriğini ekrandan sil (şoför asla görmesin)
+  var content = document.getElementById("content");
+  if(content) { content.innerHTML = ""; content.classList.remove("kpi-genis"); }
+  var tabBar = document.getElementById("tab-bar"); if(tabBar) tabBar.innerHTML = "";
+  var nav = document.getElementById("bottom-nav"); if(nav) { nav.innerHTML = ""; nav.style.display = "none"; }
+  var akr = document.getElementById("akordeon"); if(akr) akr.innerHTML = "";
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
-  zoomKapat(); // login ekranında zoom kapalı
+  zoomKapat();
   document.getElementById("login-buttons").style.display = "block";
   document.getElementById("login-form").style.display = "none";
   PIN = "";
@@ -600,6 +622,8 @@ const DIGER_MODULLER = [
 ];
 
 function altMenuSec(menu) {
+  // GÜVENLİK: Alt menü (yönetici navigasyonu) sadece admin içindir
+  if(!KUL || KUL.rol!=="admin") return;
   AKTIF_MENU = menu;
   sessionStorage.setItem("aktif_menu", menu);
   renderBottomNav();
@@ -694,6 +718,20 @@ function renderSoforTabBar() {
 }
 
 function tabSec(id) {
+  // GÜVENLİK: Rol bazlı sekme erişimi. Şoför/yakıt admin sekmelerini AÇAMAZ.
+  if(!KUL) return;
+  var izinli = {
+    admin: null, // admin her şeye erişebilir
+    yakit: ["yakit","yakitliste"],
+    sofor: ["cikis","aktif"]
+  };
+  if(KUL.rol!=="admin") {
+    var liste = izinli[KUL.rol] || [];
+    if(liste.indexOf(id)===-1) {
+      // Yetkisiz sekme: kendi varsayılan sekmesine yönlendir
+      id = liste[0];
+    }
+  }
   AKTIF_TAB = id;
   sessionStorage.setItem("aktif_tab", id);
   // Talepler ekranı için otomatik yenileme: bu ekrandayken her 15 sn'de bir kontrol et
