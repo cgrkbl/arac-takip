@@ -3660,15 +3660,15 @@ async function aracPlanExcel() {
   if(isler.length===0){ showToast("İş kaydı yok!","error"); return; }
   var wb = new ExcelJS.Workbook();
   var ws = wb.addWorksheet("Sayfa1");
-  var basliklar = ["No","Tarih","İlgili Birim","Açıklama","Araç Kullanım","Çıkış Yeri","Gidiş Yeri","Planlanan Sevkiyat","Nakliye Maliyeti(TL)","Plaka","Hafta","Plan","Gerçekleşen"];
-  var gen = [5.8,15.8,15.4,26.4,14,15.8,24.2,13,16,8,12.8,8,12];
+  var basliklar = ["No","Tarih","İlgili Birim","Açıklama","Araç Kullanım","Çıkış Yeri","Gidiş Yeri","Planlanan Sevkiyat","Plaka","Hafta","Plan","Gerçekleşen"];
+  var gen = [5.8,15.8,15.4,26.4,14,15.8,24.2,13,8,12.8,8,12];
   gen.forEach(function(w,i){ ws.getColumn(i+1).width=w; });
   var ince={style:"thin",color:{argb:"FFB0B0B0"}};
   // Başlık
   basliklar.forEach(function(b,i){
     var c=ws.getCell(1,i+1); c.value=b;
     c.font={name:"Arial",bold:true,size:11}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFCE4D6"}};
-    c.alignment={horizontal:"center",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
+    c.alignment={horizontal:"left",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
   });
   ws.getRow(1).height=20;
   // Satırlar
@@ -3685,7 +3685,7 @@ async function aracPlanExcel() {
       "KR","KR",
       {formula:"D"+r},
       planlanan,
-      null, null,
+      null,
       {formula:'CONCATENATE("W",WEEKNUM(B'+r+',11))'},
       {formula:"H"+r+"*1"},
       gerc
@@ -3694,8 +3694,8 @@ async function aracPlanExcel() {
       var c=ws.getCell(r,i+1); c.value=v;
       c.font={name:"Arial",size:11};
       c.border={top:ince,bottom:ince,left:ince,right:ince};
-      if(i===1){ c.numFmt="dd.mm.yyyy"; c.alignment={horizontal:"center"}; }
-      if(i===0||i>=4){ c.alignment={horizontal:"center"}; }
+      c.alignment={horizontal:"left"};
+      if(i===1){ c.numFmt="dd.mm.yyyy"; }
     });
     // İlgili Birim (C): kalın + mavi dolgu
     var cc=ws.getCell(r,3); cc.font={name:"Arial",size:11,bold:true}; cc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFDDEBF7"}};
