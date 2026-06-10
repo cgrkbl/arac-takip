@@ -301,6 +301,17 @@ textarea{resize:vertical;}
 
 <div id="toast"></div>
 
+<div id="fiyat-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#1c1c1e;border:1px solid #48484a;border-radius:16px;padding:20px;width:100%;max-width:340px">
+    <div style="font-size:16px;font-weight:700;color:#f2f2f7;margin-bottom:12px">Nakliye Ücretini Düzenle</div>
+    <input type="number" id="fiyat-input" step="any" style="width:100%;background:#2c2c2e;border:1px solid #48484a;border-radius:10px;color:#f2f2f7;font-size:15px;padding:11px;box-sizing:border-box"/>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="fiyatModalKapat()" style="flex:1;padding:11px;background:#3a3a3c;border:none;border-radius:10px;color:#f2f2f7;font-size:14px;font-weight:600;cursor:pointer">Vazgeç</button>
+      <button onclick="fiyatModalKaydet()" style="flex:1;padding:11px;background:#0a84ff;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer">Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <div id="red-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px">
   <div style="background:#1c1c1e;border:1px solid #48484a;border-radius:16px;padding:20px;width:100%;max-width:380px">
     <div style="font-size:16px;font-weight:700;color:#f2f2f7;margin-bottom:4px">Talebi Reddet</div>
@@ -4070,8 +4081,10 @@ function renderNakliyeListe() {
         (n.aciklama?'<div style="font-size:11px;color:#636366">💬 '+n.aciklama+'</div>':"") +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
-        '<span class="badge badge-orange">'+n.fiyat.toLocaleString("tr-TR")+' TL</span>' +
-        '<button onclick="nakliyeSil('+n.id+')" style="background:none;border:1px solid #ff453a;border-radius:6px;color:#ff453a;font-size:11px;cursor:pointer;padding:3px 8px">🗑️ Sil</button>' +
+        (KUL.rol==="admin"
+          ? '<button onclick="nakliyeFiyatDuzenle('+n.id+')" class="badge badge-orange" style="border:none;cursor:pointer">'+n.fiyat.toLocaleString("tr-TR")+' TL ✏️</button>'
+          : '<span class="badge badge-orange">'+n.fiyat.toLocaleString("tr-TR")+' TL</span>') +
+        (KUL.rol==="admin"?'<button onclick="nakliyeSil('+n.id+')" style="background:none;border:1px solid #ff453a;border-radius:6px;color:#ff453a;font-size:11px;cursor:pointer;padding:3px 8px">🗑️ Sil</button>':"") +
         '</div></div></div>';
     }).join("")}
     <div style="height:20px"></div>
@@ -4121,6 +4134,32 @@ async function nakliyeSil(id) {
   DB.nakliyeler = DB.nakliyeler.filter(function(n){ return n.id!==id; });
   showToast("Nakliye silindi.");
   renderNakliyeListe();
+}
+
+function nakliyeFiyatDuzenle(id) {
+  if(KUL.rol!=="admin") return;
+  var n = DB.nakliyeler.find(function(x){ return x.id===id; });
+  if(!n) return;
+  window._fiyatNakliyeId = id;
+  document.getElementById("fiyat-input").value = n.fiyat;
+  document.getElementById("fiyat-modal").style.display = "flex";
+  setTimeout(function(){ document.getElementById("fiyat-input").focus(); }, 100);
+}
+function fiyatModalKapat() {
+  document.getElementById("fiyat-modal").style.display = "none";
+  window._fiyatNakliyeId = null;
+}
+async function fiyatModalKaydet() {
+  var id = window._fiyatNakliyeId;
+  var yeni = parseFloat(document.getElementById("fiyat-input").value);
+  if(!id || isNaN(yeni)) { showToast("Geçerli bir tutar girin!","error"); return; }
+  fiyatModalKapat();
+  try {
+    await supa.from('nakliyeler').update({fiyat:yeni}).eq('id', id);
+    DB.nakliyeler = DB.nakliyeler.map(function(n){ return n.id===id?Object.assign({},n,{fiyat:yeni}):n; });
+    showToast("Nakliye ücreti güncellendi.");
+    renderNakliyeListe();
+  } catch(e) { showToast("Hata: "+(e.message||"güncellenemedi"),"error"); }
 }
 
 // ═══════════════ İŞ KAZASI ═══════════════
