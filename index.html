@@ -2233,8 +2233,8 @@ function renderKonumlar() {
         <div class="field"><label>Konum Adı *</label><input type="text" id="yk-isim" placeholder="İstanbul Depo"/></div>
         <div class="field"><label>Açıklama</label><input type="text" id="yk-adres" placeholder="İstanbul"/></div>
         <div class="row">
-          <div class="field"><label>Enlem *</label><input type="number" id="yk-lat" placeholder="41.0082" step="any"/></div>
-          <div class="field"><label>Boylam *</label><input type="number" id="yk-lng" placeholder="28.9784" step="any"/></div>
+          <div class="field"><label>Enlem (opsiyonel)</label><input type="number" id="yk-lat" placeholder="41.0082" step="any"/></div>
+          <div class="field"><label>Boylam (opsiyonel)</label><input type="number" id="yk-lng" placeholder="28.9784" step="any"/></div>
         </div>
         <button class="btn btn-green" onclick="konumEkle()">+ Konumu Ekle</button>
       </div>
@@ -2257,7 +2257,7 @@ function renderKonumlar() {
             <div style="font-size:13px;font-weight:700">${k.isim}</div>
             ${k.adres?`<div style="font-size:11px;color:#636366">${k.adres}</div>`:""}
           </div>
-          <a href="https://www.google.com/maps?q=${k.lat},${k.lng}" target="_blank" style="font-size:18px;text-decoration:none">🗺️</a>
+          ${(k.lat!=null && k.lng!=null) ? `<a href="https://www.google.com/maps?q=${k.lat},${k.lng}" target="_blank" style="font-size:18px;text-decoration:none">🗺️</a>` : `<span title="Konum bekleniyor" style="font-size:13px;color:#8a8f99">📍—</span>`}
           <button onclick="konumDuzenle(${k.id})" style="background:none;color:#0a84ff;font-size:18px;padding:0">✏️</button>
           <button onclick="konumSil(${k.id})" style="background:none;color:#ff453a;font-size:18px;padding:0">🗑️</button>
         </div>`;
@@ -2285,10 +2285,10 @@ async function konumEkle() {
   const adres=document.getElementById("yk-adres").value.trim();
   const lat=parseFloat(document.getElementById("yk-lat").value);
   const lng=parseFloat(document.getElementById("yk-lng").value);
-  if(!isim||!lat||!lng){showToast("Zorunlu alanları doldurun!","error");return;}
+  if(!isim){showToast("Konum adı zorunlu!","error");return;}
   try {
-    const data = await konumEkleDB({isim,adres,lat,lng});
-    DB.konumlar.push(Object.assign({}, data, {lat:parseFloat(data.lat), lng:parseFloat(data.lng)}));
+    const data = await konumEkleDB({isim,adres,lat:isNaN(lat)?null:lat,lng:isNaN(lng)?null:lng});
+    DB.konumlar.push(Object.assign({}, data, {lat:data.lat!=null?parseFloat(data.lat):null, lng:data.lng!=null?parseFloat(data.lng):null}));
     showToast(isim+" eklendi!");
     renderKonumlar();
   } catch(e) { showToast("Hata: "+e.message,"error"); }
