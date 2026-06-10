@@ -174,7 +174,7 @@ textarea{resize:vertical;}
     <div id="talep-form">
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Ad Soyad *</label>
-        <input type="text" id="t-isim" placeholder="Ahmet Yılmaz"/>
+        <input type="text" id="t-isim" />
       </div>
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Departman / Kategori *</label>
@@ -182,7 +182,7 @@ textarea{resize:vertical;}
       </div>
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Nereye Gidecek *</label>
-        <input type="text" id="t-nereye" placeholder="İstanbul, Merkez Depo"/>
+        <input type="text" id="t-nereye" />
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div class="field">
@@ -210,7 +210,7 @@ textarea{resize:vertical;}
     <div id="talep-sorgula-panel" style="display:none">
       <div class="field" style="margin-bottom:12px">
         <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Ad Soyad *</label>
-        <input type="text" id="s-isim" placeholder="Ahmet Yılmaz"/>
+        <input type="text" id="s-isim" />
       </div>
       <button onclick="talepSorgula()" style="width:100%;padding:14px;background:#636366;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:16px">🔍 Sorgula</button>
       <div id="sorgula-sonuc"></div>
@@ -3604,8 +3604,9 @@ function renderIsListe() {
         '</div>';
     }).join("")}
 
-    <div style="margin-bottom:12px">
-      <button class="btn btn-green" onclick="isExcel()">📥 İş Listesini Excel'e Aktar</button>
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green" onclick="isExcel()" style="flex:1;min-width:160px">📥 İş Listesini Excel'e Aktar</button>
+      <button class="btn btn-blue" onclick="aracPlanExcel()" style="flex:1;min-width:160px">🚚 Araç Gerçekleşen Plan</button>
     </div>
     <div style="height:20px"></div>
   `);
@@ -3653,6 +3654,67 @@ async function isSil(id) {
 
 function isFiltreTarih(t) { window.IS_FILTRE_TARIH=t; window.IS_FILTRE_TARIH_MANUEL=true; renderIsListe(); }
 function isFiltreKat(k) { window.IS_FILTRE_KAT=k; renderIsListe(); }
+
+async function aracPlanExcel() {
+  var isler = (DB.isler||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
+  if(isler.length===0){ showToast("İş kaydı yok!","error"); return; }
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet("Sayfa1");
+  var basliklar = ["No","Tarih","İlgili Birim","Açıklama","Araç Kullanım","Çıkış Yeri","Gidiş Yeri","Planlanan Sevkiyat","Nakliye Maliyeti(TL)","Plaka","Hafta","Plan","Gerçekleşen"];
+  var gen = [5.8,15.8,15.4,26.4,14,15.8,24.2,13,16,8,12.8,8,12];
+  gen.forEach(function(w,i){ ws.getColumn(i+1).width=w; });
+  var ince={style:"thin",color:{argb:"FFB0B0B0"}};
+  // Başlık
+  basliklar.forEach(function(b,i){
+    var c=ws.getCell(1,i+1); c.value=b;
+    c.font={name:"Arial",bold:true,size:11}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFCE4D6"}};
+    c.alignment={horizontal:"center",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
+  });
+  ws.getRow(1).height=20;
+  // Satırlar
+  isler.forEach(function(is,idx){
+    var r=idx+2;
+    var nakliyeMi = /nakliye/i.test(is.firma||"");
+    var planlanan = parseFloat(is.miktar)||1;
+    var gerc = is.durum==="Tamamlandı" ? 1 : 0;
+    var satir = [
+      idx+1,
+      is.tarih ? new Date(is.tarih) : null,
+      is.kategori||"",
+      is.firma||"",
+      "KR","KR",
+      {formula:"D"+r},
+      planlanan,
+      null, null,
+      {formula:'CONCATENATE("W",WEEKNUM(B'+r+',11))'},
+      {formula:"H"+r+"*1"},
+      gerc
+    ];
+    satir.forEach(function(v,i){
+      var c=ws.getCell(r,i+1); c.value=v;
+      c.font={name:"Arial",size:11};
+      c.border={top:ince,bottom:ince,left:ince,right:ince};
+      if(i===1){ c.numFmt="dd.mm.yyyy"; c.alignment={horizontal:"center"}; }
+      if(i===0||i>=4){ c.alignment={horizontal:"center"}; }
+    });
+    // İlgili Birim (C): kalın + mavi dolgu
+    var cc=ws.getCell(r,3); cc.font={name:"Arial",size:11,bold:true}; cc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFDDEBF7"}};
+    // Nakliye satırı: D ve G kırmızı + kalın
+    if(nakliyeMi){
+      ws.getCell(r,4).font={name:"Arial",size:11,bold:true,color:{argb:"FFFF0000"}};
+      ws.getCell(r,7).font={name:"Arial",size:11,bold:true,color:{argb:"FFFF0000"}};
+    }
+  });
+  try {
+    var buffer = await wb.xlsx.writeBuffer();
+    var blob = new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    var url=URL.createObjectURL(blob); var a=document.createElement("a");
+    a.href=url; a.download="Arac_Gerceklesen_Plan_"+bugunTR()+".xlsx";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    showToast("Araç planı indirildi!");
+  } catch(e){ showToast("Hata: "+(e.message||"oluşturulamadı"),"error"); }
+}
 
 async function isExcel() {
   var tarih = window.IS_FILTRE_TARIH || bugunTR();
