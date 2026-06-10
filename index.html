@@ -2497,7 +2497,6 @@ async function listeExcel(baslik, sutunlar, satirlar, dosyaAdi) {
   R++;
   // Satırlar
   satirlar.forEach(function(row, ri){
-    ws.getRow(R).height=16;
     for(var ci=0;ci<KOL;ci++){
       var dc=ws.getCell(R,2+ci);
       var hucre=row[ci];
@@ -2509,7 +2508,7 @@ async function listeExcel(baslik, sutunlar, satirlar, dosyaAdi) {
       } else dc.value=hucre;
       dc.font={name:"Arial",size:10,color:{argb:"FF222222"}};
       if(ri%2===1) dc.fill={type:"pattern",pattern:"solid",fgColor:{argb:GRI}};
-      dc.alignment={horizontal: ci===0?"center":"left", vertical:"middle"};
+      dc.alignment={horizontal: ci===0?"center":"left", vertical:"middle", wrapText:true};
       dc.border={top:ince,bottom:ince,left:ince,right:ince};
     }
     R++;
