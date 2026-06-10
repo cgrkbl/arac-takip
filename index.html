@@ -49,9 +49,9 @@ textarea{resize:vertical;}
 #btn-cikis-header{background:#3a3a3c;border:1px solid #48484a;border-radius:8px;padding:5px 10px;color:#aeaeb2;font-size:11px;}
 
 /* Üst tab bar */
-#tab-bar{background:#2c2c2e;border-bottom:1px solid #48484a;display:flex;overflow-x:auto;}
+#tab-bar{background:#2c2c2e;border-bottom:1px solid #48484a;display:flex;overflow-x:auto;min-height:44px;flex-shrink:0;}
 #tab-bar::-webkit-scrollbar{display:none;}
-.tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#636366;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;}
+.tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#636366;border:none;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
 .tab-btn.active{color:#0a84ff;border-bottom-color:#0a84ff;}
 .tab-badge{position:absolute;top:5px;right:4px;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
 #akordeon{background:#1c1c1e;border-bottom:1px solid #48484a;}
@@ -563,11 +563,15 @@ async function girisYap(kul) {
   } else if(kul.rol==="yakit") {
     AKTIF_MENU = "yakit-personeli";
     document.getElementById("bottom-nav").style.display = "none";
+    document.getElementById("akordeon").style.display = "none";
+    document.getElementById("tab-bar").style.display = "flex";
     renderTabBar([{id:"yakit",label:"⛽ Yakıt Girişi"},{id:"yakitliste",label:"📋 Yakıt Listesi"}]);
     tabSec("yakit");
   } else {
     AKTIF_MENU = "sofor";
     document.getElementById("bottom-nav").style.display = "none";
+    document.getElementById("akordeon").style.display = "none";
+    document.getElementById("tab-bar").style.display = "flex";
     renderSoforTabBar();
     tabSec("cikis");
     renderSoforTabBar(); // tab-bar'ı garantiye al (içerik render'dan sonra)
@@ -590,9 +594,9 @@ function logout() {
   // Yönetici içeriğini ekrandan sil (şoför asla görmesin)
   var content = document.getElementById("content");
   if(content) { content.innerHTML = ""; content.classList.remove("kpi-genis"); }
-  var tabBar = document.getElementById("tab-bar"); if(tabBar) tabBar.innerHTML = "";
+  var tabBar = document.getElementById("tab-bar"); if(tabBar) { tabBar.innerHTML = ""; tabBar.style.display = "flex"; }
   var nav = document.getElementById("bottom-nav"); if(nav) { nav.innerHTML = ""; nav.style.display = "none"; }
-  var akr = document.getElementById("akordeon"); if(akr) akr.innerHTML = "";
+  var akr = document.getElementById("akordeon"); if(akr) { akr.innerHTML = ""; akr.style.display = "none"; }
   document.getElementById("app").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
   zoomKapat();
