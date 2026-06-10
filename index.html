@@ -4330,7 +4330,7 @@ function kazaDetay(id) {
     '<div style="margin-bottom:8px"><b>📅 Tarih:</b> '+(k.tarih||"-")+'</div>' +
     (k.kisi?'<div style="margin-bottom:8px"><b>👤 Kişi:</b> '+k.kisi+'</div>':"") +
     (k.arac?'<div style="margin-bottom:8px"><b>🚗 Araç:</b> '+k.arac+'</div>':"") +
-    '<div style="margin-top:12px;background:#2c2c2e;border-radius:10px;padding:12px"><b>Açıklama:</b><br>'+(k.aciklama||"(açıklama yok)")+'</div>';
+    '<div style="margin-top:12px;background:#2c2c2e;border-radius:10px;padding:12px;word-break:break-word;overflow-wrap:break-word"><b>Açıklama:</b><br>'+(k.aciklama||"(açıklama yok)")+'</div>';
   document.getElementById("kaza-modal-icerik").innerHTML = html;
   // Görüntüleme moduna al
   document.getElementById("kaza-modal-icerik").style.display = "block";
