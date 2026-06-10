@@ -3661,16 +3661,16 @@ async function aracPlanExcel() {
   var wb = new ExcelJS.Workbook();
   var ws = wb.addWorksheet("Sayfa1");
   var basliklar = ["No","Tarih","İlgili Birim","Açıklama","Araç Kullanım","Çıkış Yeri","Gidiş Yeri","Planlanan Sevkiyat","Plaka","Hafta","Plan","Gerçekleşen"];
-  var gen = [6,13,16,28,14,13,26,13,10,9,8,12];
+  var gen = [6,13,16,28,16,13,26,20,10,9,9,14];
   gen.forEach(function(w,i){ ws.getColumn(i+1).width=w; });
   var ince={style:"thin",color:{argb:"FFB0B0B0"}};
   // Başlık
   basliklar.forEach(function(b,i){
     var c=ws.getCell(1,i+1); c.value=b;
     c.font={name:"Arial",bold:true,size:11}; c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFFCE4D6"}};
-    c.alignment={horizontal:"left",vertical:"middle",wrapText:true}; c.border={top:ince,bottom:ince,left:ince,right:ince};
+    c.alignment={horizontal:"left",vertical:"middle"}; c.border={top:ince,bottom:ince,left:ince,right:ince};
   });
-  ws.getRow(1).height=32;
+  ws.getRow(1).height=20;
   // Satırlar
   isler.forEach(function(is,idx){
     var r=idx+2;
