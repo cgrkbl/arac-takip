@@ -701,11 +701,13 @@ function renderBottomNav() {
 
 function renderTabBar(tablar) {
   const bar = document.getElementById("tab-bar");
+  var aktifSay = (DB.aktifSeferler||[]).length;
+  var bekleyenTalep = (DB.talepler||[]).filter(function(x){return x.durum==="Bekliyor";}).length;
   bar.innerHTML = tablar.map(t=>`
     <button class="tab-btn ${AKTIF_TAB===t.id?'active':''}" onclick="tabSec('${t.id}')">
       ${t.label}
-      ${t.id==="aktif"&&DB.aktifSeferler.length>0?`<span class="tab-badge">${DB.aktifSeferler.length}</span>`:""}
-      ${t.id==="talepler"&&DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length>0?`<span class="tab-badge">${DB.talepler.filter(function(x){return x.durum==="Bekliyor";}).length}</span>`:""}
+      ${t.id==="aktif"&&aktifSay>0?`<span class="tab-badge">${aktifSay}</span>`:""}
+      ${t.id==="talepler"&&bekleyenTalep>0?`<span class="tab-badge">${bekleyenTalep}</span>`:""}
     </button>
   `).join("");
 }
