@@ -570,6 +570,7 @@ async function girisYap(kul) {
     document.getElementById("bottom-nav").style.display = "none";
     renderSoforTabBar();
     tabSec("cikis");
+    renderSoforTabBar(); // tab-bar'ı garantiye al (içerik render'dan sonra)
   }
   headerGuncelle();
   logo();
