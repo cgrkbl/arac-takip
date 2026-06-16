@@ -10,15 +10,15 @@
 <title>Küçüker Lojistik</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{background:#eef1f6;font-family:-apple-system,Segoe UI,sans-serif;color:#1c2230;min-height:100vh;}
+body{background:#16141c;font-family:-apple-system,Segoe UI,sans-serif;color:#f2f2f7;min-height:100vh;}
 input,select,textarea{font-family:inherit;font-size:14px;color:#f2f2f7;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;padding:10px 12px;width:100%;outline:none;-webkit-appearance:none;}
 input:focus,select:focus,textarea:focus{border-color:#0a84ff;}
 input[type=date]{color:#f2f2f7;}
 button{font-family:inherit;cursor:pointer;border:none;outline:none;}
 textarea{resize:vertical;}
 .screen{display:none;} .screen.active{display:block;}
-.card{background:#ffffff;border:1px solid #e2e5ec;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
-.section-title{font-size:10px;font-weight:700;color:#8a909c;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+.card{background:#2c2c2e;border:1px solid #48484a;border-radius:12px;padding:14px;margin-bottom:12px;}
+.section-title{font-size:10px;font-weight:700;color:#636366;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:0;}
 .field label{font-size:11px;color:#636366;font-weight:600;}
@@ -40,35 +40,35 @@ textarea{resize:vertical;}
 .pulse{animation:pulse 2s infinite;}
 
 /* Header */
-#header{background:#ffffff;border-bottom:1px solid #e2e5ec;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
+#header{background:#2c2c2e;border-bottom:1px solid #48484a;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
 #header-logo{width:36px;height:36px;border-radius:10px;overflow:hidden;flex-shrink:0;}
 #header-logo img{width:100%;height:100%;object-fit:contain;background:#fff;}
 #header-title{font-size:15px;font-weight:700;}
-#header-sub{font-size:10px;color:#6a7180;}
+#header-sub{font-size:10px;color:#636366;}
 #header-right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;}
-#btn-cikis-header{background:#f0f2f7;border:1px solid #d8dce4;border-radius:8px;padding:5px 10px;color:#4a505c;font-size:11px;}
+#btn-cikis-header{background:#3a3a3c;border:1px solid #48484a;border-radius:8px;padding:5px 10px;color:#aeaeb2;font-size:11px;}
 
 /* Üst tab bar */
-#tab-bar{background:#ffffff;border-bottom:1px solid #e2e5ec;display:flex;overflow-x:auto;min-height:44px;flex-shrink:0;}
+#tab-bar{background:#2c2c2e;border-bottom:1px solid #48484a;display:flex;overflow-x:auto;min-height:44px;flex-shrink:0;}
 #tab-bar::-webkit-scrollbar{display:none;}
-.tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#8a909c;border:none;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
+.tab-btn{flex:1;min-width:60px;padding:11px 4px;background:transparent;color:#636366;border:none;border-bottom:2px solid transparent;font-size:11px;font-weight:600;position:relative;white-space:nowrap;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
 .tab-btn.active{color:#0a84ff;border-bottom-color:#0a84ff;}
 .tab-badge{position:absolute;top:5px;right:4px;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
-#akordeon{background:#f5f7fa;border-bottom:1px solid #e2e5ec;}
-.akr-bar{display:flex;background:#ffffff;}
-.akr-bas{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;user-select:none;border-bottom:2px solid transparent;color:#6a7180;position:relative;}
+#akordeon{background:#1c1c1e;border-bottom:1px solid #48484a;}
+.akr-bar{display:flex;background:#2c2c2e;}
+.akr-bas{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 2px;cursor:pointer;user-select:none;border-bottom:2px solid transparent;color:#aeaeb2;position:relative;}
 .akr-bas .akr-ikon{font-size:17px;line-height:1;}
 .akr-bas .akr-baslik{font-weight:600;font-size:10px;white-space:nowrap;}
-.akr-bas.acik{color:#0a84ff;border-bottom-color:#0a84ff;background:#f0f4fa;}
+.akr-bas.acik{color:#0a84ff;border-bottom-color:#0a84ff;background:#1c1c1e;}
 .akr-panel{display:flex;gap:8px;padding:10px;flex-wrap:wrap;}
-.akr-alt-btn{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#f0f2f7;color:#4a505c;font-size:14px;border-radius:8px;cursor:pointer;flex:1;min-width:130px;justify-content:center;}
+.akr-alt-btn{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#2c2c2e;color:#aeaeb2;font-size:14px;border-radius:8px;cursor:pointer;flex:1;min-width:130px;justify-content:center;}
 .akr-alt-btn.aktif{background:#0a84ff;color:#fff;font-weight:600;}
 .kpi-input{-moz-appearance:textfield;appearance:textfield;}
 .kpi-input::-webkit-outer-spin-button,.kpi-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 
 /* Alt nav - admin */
-#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#ffffff;border-top:1px solid #e2e5ec;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
-.nav-btn{flex:1;padding:10px 4px 8px;background:transparent;color:#8a909c;font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;}
+#bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#2c2c2e;border-top:1px solid #48484a;display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+.nav-btn{flex:1;padding:10px 4px 8px;background:transparent;color:#636366;font-size:10px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;}
 .nav-btn.active{color:#0a84ff;}
 .nav-btn span:first-child{font-size:20px;}
 .nav-badge{position:absolute;top:6px;right:25%;background:#ff453a;color:#fff;border-radius:50%;width:15px;height:15px;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:700;}
@@ -77,12 +77,12 @@ textarea{resize:vertical;}
 
 /* KPI */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.kpi-card{background:#ffffff;border:1px solid #e2e5ec;border-left:3px solid #7e57c2;border-radius:12px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.kpi-card{background:#2c2c2e;border:1px solid #48484a;border-left:3px solid #7e57c2;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
 .kpi-icon{font-size:18px;margin-bottom:6px;}
 .kpi-val{font-size:20px;font-weight:800;}
-.kpi-unit{font-size:10px;color:#8a909c;margin-top:1px;}
-.kpi-label{font-size:11px;color:#6a7180;margin-top:3px;}
-.bar-wrap{background:#e2e5ec;border-radius:4px;height:6px;overflow:hidden;margin-top:4px;}
+.kpi-unit{font-size:10px;color:#636366;margin-top:1px;}
+.kpi-label{font-size:11px;color:#aeaeb2;margin-top:3px;}
+.bar-wrap{background:#3a3a3c;border-radius:4px;height:6px;overflow:hidden;margin-top:4px;}
 .bar{height:100%;border-radius:4px;}
 
 /* Login */
@@ -108,7 +108,7 @@ textarea{resize:vertical;}
 #btn-geri{background:none;color:#636366;font-size:13px;margin-bottom:20px;padding:0;}
 
 /* Harita */
-#map{height:400px;border-radius:12px;overflow:hidden;border:1px solid #d8dce4;}
+#map{height:400px;border-radius:12px;overflow:hidden;border:1px solid #48484a;}
 .leaflet-popup-content-wrapper{background:#2c2c2e;border:1px solid #48484a;color:#f2f2f7;border-radius:10px;}
 .leaflet-popup-tip{background:#2c2c2e;}
 .leaflet-popup-content{margin:10px 14px;font-family:-apple-system,sans-serif;font-size:12px;}
@@ -116,20 +116,20 @@ textarea{resize:vertical;}
 /* Uyarı banner */
 .warn-red{background:#3a1a1a;border:1px solid #ff453a;border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:8px;}
 .warn-orange{background:#2d1f00;border:1px solid #ff9f0a;border-radius:10px;padding:10px 14px;font-size:12px;margin-bottom:8px;}
-.info-banner{background:#eef4ff;border:1px solid #cfe0ff;border-radius:8px;padding:10px 14px;font-size:12px;color:#4a505c;margin-bottom:12px;}
+.info-banner{background:#2c2c2e;border:1px solid #48484a;border-radius:8px;padding:10px 14px;font-size:12px;color:#aeaeb2;margin-bottom:12px;}
 
 /* Araç durum kartı */
 .arac-durum-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.durum-item{background:#f5f7fa;border-radius:8px;padding:8px 10px;}
-.durum-tur{font-size:10px;color:#8a909c;text-transform:uppercase;letter-spacing:.8px;}
+.durum-item{background:#1c1c1e;border-radius:8px;padding:8px 10px;}
+.durum-tur{font-size:10px;color:#636366;text-transform:uppercase;letter-spacing:.8px;}
 .durum-val{font-size:12px;font-weight:600;margin-top:2px;}
 .dash-grid { display:grid; grid-template-columns:1fr; gap:12px; }
 .dash-kpi-kolon { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
 .dash-sol { display:flex; flex-direction:column; gap:12px; }
 .dash-row2 { display:grid; grid-template-columns:1fr; gap:12px; }
-.dash-panel { background:#ffffff; border:1px solid #e8ebf0; border-radius:14px; padding:12px; position:relative; overflow:hidden; }
+.dash-panel { background:rgba(255,255,255,0.06); border-radius:14px; padding:12px; position:relative; overflow:hidden; }
 .dash-panel::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#26a69a,#7e57c2,#42a5f5); opacity:0.8; }
-.dash-panel-bas { font-size:12px; font-weight:700; color:#5a3d8a; margin-bottom:8px; }
+.dash-panel-bas { font-size:12px; font-weight:700; color:#d1c4e9; margin-bottom:8px; }
 .dash-kpi-kart { border-radius:14px; padding:16px; color:#fff; }
 .dash-kpi-no { font-size:11px; opacity:0.85; font-weight:700; margin-bottom:6px; }
 .dash-kpi-val { font-size:20px; font-weight:800; line-height:1; }
@@ -803,7 +803,7 @@ function headerGuncelle() {
   } else if(KUL.rol==="sofor") {
     const yolda = DB.aktifSeferler.find(s=>s.sofor===KUL.isim);
     document.getElementById("header-durum").innerHTML =
-      yolda ? '<span style="color:#ff9f0a">🟡 Yolda</span>' : '<span style="color:#8a909c">⬜ Müsait</span>';
+      yolda ? '<span style="color:#ff9f0a">🟡 Yolda</span>' : '<span style="color:#636366">⬜ Müsait</span>';
   }
 }
 
@@ -940,7 +940,7 @@ function varisGuncelle() {
   const basLng = CIKIS_SEL.lng || DB.fabrika.lng;
   el.style.display="block";
   el.innerHTML=`
-    <div style="background:#f5f7fa;border:1px solid #0a84ff44;border-radius:10px;padding:12px 14px">
+    <div style="background:#1c1c1e;border:1px solid #0a84ff44;border-radius:10px;padding:12px 14px">
       <div style="font-size:14px;font-weight:700;margin-bottom:8px">${VARIS_SEL.isim}</div>
       <a href="https://www.google.com/maps/dir/?api=1&origin=${basLat},${basLng}&destination=${VARIS_SEL.lat},${VARIS_SEL.lng}&travelmode=driving"
         target="_blank" style="display:block;text-align:center;background:#1a73e8;color:#fff;border-radius:8px;padding:9px;font-size:13px;font-weight:700;text-decoration:none">
@@ -1042,18 +1042,18 @@ function seferKarti(s) {
       <div style="display:flex;justify-content:space-between;margin-bottom:10px">
         <div>
           <div style="font-weight:700;font-size:15px">${s.sofor}</div>
-          <div style="font-size:11px;color:#8a909c">${s.tarih} • ${s.cikis_saati}</div>
+          <div style="font-size:11px;color:#636366">${s.tarih} • ${s.cikis_saati}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span class="badge badge-orange">YOLDA</span>
           <span class="badge badge-red pulse" id="sayac-${s.id}">⏱️ ${formatSure(gec)}</span>
         </div>
       </div>
-      <div style="background:#f5f7fa;border-radius:8px;padding:10px 12px;font-size:12px;color:#4a505c;margin-bottom:12px">
-        <div>🏠 <span style="color:#1c2230">${s.cikis_isim}</span></div>
-        <div style="color:#8a909c;font-size:10px;padding-left:4px">↓</div>
+      <div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;font-size:12px;color:#aeaeb2;margin-bottom:12px">
+        <div>🏠 <span style="color:#f2f2f7">${s.cikis_isim}</span></div>
+        <div style="color:#636366;font-size:10px;padding-left:4px">↓</div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span>📍 <span style="color:#1c2230">${s.varis_isim}</span></span>
+          <span>📍 <span style="color:#f2f2f7">${s.varis_isim}</span></span>
         </div>
         ${s.cikis_lat&&s.varis_lat?`
           <a href="https://www.google.com/maps/dir/?api=1&origin=${s.cikis_lat},${s.cikis_lng}&destination=${s.varis_lat},${s.varis_lng}&travelmode=driving"
@@ -1061,7 +1061,7 @@ function seferKarti(s) {
             🗺️ Navigasyonu Başlat
           </a>`:""
         }
-        <div style="display:flex;gap:12px;margin-top:6px;color:#8a909c">
+        <div style="display:flex;gap:12px;margin-top:6px;color:#636366">
           ${s.plaka?`<span>🚗 ${s.plaka}</span>`:""}
           <span>🏁 ${s.baslangic_km.toLocaleString()} km</span>
           <span>📦 ${s.yuk_turu}</span>
@@ -1923,8 +1923,8 @@ function cizPastaGrafik(canvasId, legendId, veriler, renkler) {
     leg.innerHTML = veriler.map((v,i)=>`
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
         <div style="width:10px;height:10px;border-radius:50%;background:${renkler[i%renkler.length]};flex-shrink:0"></div>
-        <span style="color:#4a505c">${v.etiket}</span>
-        <span style="color:#1c2230;font-weight:600;margin-left:auto">${v.yuzde}%</span>
+        <span style="color:#aeaeb2">${v.etiket}</span>
+        <span style="color:#f2f2f7;font-weight:600;margin-left:auto">${v.yuzde}%</span>
       </div>`).join("");
   }
 }
@@ -1943,7 +1943,7 @@ function renderListe() {
     <div class="card" style="margin-bottom:12px">
       <div class="section-title">FİLTRELE</div>
       <div style="margin-bottom:8px">
-        <label style="font-size:11px;color:#8a909c;font-weight:600;display:block;margin-bottom:4px">Şoför</label>
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:4px">Şoför</label>
         <select onchange="listeFiltreGuncelle(this.value)" style="width:100%">
           <option value="Tümü" ${FILTRE_SOFOR==="Tümü"?"selected":""}>Tüm Şoförler</option>
           ${DB.soforler.map(s=>`<option value="${s.isim}" ${FILTRE_SOFOR===s.isim?"selected":""}>${s.isim}</option>`).join("")}
@@ -1951,21 +1951,21 @@ function renderListe() {
       </div>
       <div class="row" style="margin-bottom:8px">
         <div>
-          <label style="font-size:11px;color:#8a909c;font-weight:600;display:block;margin-bottom:4px">Başlangıç Tarihi</label>
+          <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:4px">Başlangıç Tarihi</label>
           <input type="date" value="${FILTRE_BAS}" onchange="listeTarihGuncelle('bas',this.value)" style="width:100%"/>
         </div>
         <div>
-          <label style="font-size:11px;color:#8a909c;font-weight:600;display:block;margin-bottom:4px">Bitiş Tarihi</label>
+          <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:4px">Bitiş Tarihi</label>
           <input type="date" value="${FILTRE_BIT}" onchange="listeTarihGuncelle('bit',this.value)" style="width:100%"/>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        <button onclick="listeHizliFiltre(1)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Bugün</button>
-        <button onclick="listeHizliFiltre(7)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 7 Gün</button>
-        <button onclick="listeHizliFiltre(30)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="listeHizliFiltre(0)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Tümü</button>
+        <button onclick="listeHizliFiltre(1)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bugün</button>
+        <button onclick="listeHizliFiltre(7)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 7 Gün</button>
+        <button onclick="listeHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="listeHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
       </div>
-      <div style="font-size:12px;color:#8a909c">${data.length} kayıt bulundu • Toplam ${data.reduce(function(a,s){return a+s.km_fark;},0).toLocaleString()} km</div>
+      <div style="font-size:12px;color:#636366">${data.length} kayıt bulundu • Toplam ${data.reduce(function(a,s){return a+s.km_fark;},0).toLocaleString()} km</div>
     </div>
     ${(KUL.rol==="admin"&&data.length>0)?`<div style="margin-bottom:12px"><button class="btn btn-green" onclick="seferExcel()">📥 Excel'e Aktar</button></div>`:""}
     ${data.length===0?`<div class="empty"><div class="empty-icon">📭</div>Tamamlanan sefer yok.</div>`:""}
@@ -1974,7 +1974,7 @@ function renderListe() {
         <div style="display:flex;justify-content:space-between;margin-bottom:8px">
           <div>
             <div style="font-weight:700;font-size:14px">${s.sofor}</div>
-            <div style="font-size:11px;color:#8a909c">${s.tarih} • ${s.cikis_saati} → ${s.donus_saati}</div>
+            <div style="font-size:11px;color:#636366">${s.tarih} • ${s.cikis_saati} → ${s.donus_saati}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <span class="badge badge-green">${s.km_fark} km</span>
@@ -1982,17 +1982,17 @@ function renderListe() {
             ${KUL.rol==="admin"?`<button onclick="seferSil(${s.id})" style="background:none;border:none;color:#ff453a;font-size:16px;padding:0;cursor:pointer;margin-top:2px">🗑️</button>`:""}
           </div>
         </div>
-        <div style="font-size:12px;color:#4a505c">
-          <div style="margin-bottom:3px">🏠 ${s.cikis_isim} <span style="color:#8a909c">→</span> 📍 ${s.varis_isim}
+        <div style="font-size:12px;color:#aeaeb2">
+          <div style="margin-bottom:3px">🏠 ${s.cikis_isim} <span style="color:#636366">→</span> 📍 ${s.varis_isim}
           </div>
           ${s.varis_lat?`<div style="margin-bottom:3px"><a href="https://www.google.com/maps?q=${s.varis_lat},${s.varis_lng}" target="_blank" style="color:#0a84ff;text-decoration:none;font-size:11px">🗺️ Haritada Gör</a></div>`:""}
-          <div style="display:flex;gap:10px;flex-wrap:wrap;color:#8a909c">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;color:#636366">
             ${s.plaka?`<span>🚗 ${s.plaka}</span>`:""}
             <span>🏁 ${s.baslangic_km.toLocaleString()} → ${s.bitis_km.toLocaleString()}</span>
             <span>📦 ${s.yuk_turu}</span>
             ${s.yuk_miktari?`<span>⚖️ ${s.yuk_miktari} ${s.yuk_birimi}</span>`:""}
           </div>
-          ${s.aciklama?`<div style="color:#8a909c;margin-top:3px">💬 ${s.aciklama}</div>`:""}
+          ${s.aciklama?`<div style="color:#636366;margin-top:3px">💬 ${s.aciklama}</div>`:""}
         </div>
       </div>`).join("")}
     <div style="height:20px"></div>
@@ -2032,13 +2032,13 @@ function renderHarita() {
 
   setContent(`
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-      <span style="font-size:12px;color:#8a909c">Tarih:</span>
+      <span style="font-size:12px;color:#636366">Tarih:</span>
       <select onchange="haritaTarihGuncelle(this.value)" style="flex:1">
         ${tarihler.length===0?`<option value="${FILTRE_HARITA_TARIH}">${FILTRE_HARITA_TARIH}</option>`:""}
         ${tarihler.map(t=>`<option value="${t}" ${FILTRE_HARITA_TARIH===t?"selected":""}>${t}</option>`).join("")}
       </select>
     </div>
-    <div class="card" style="padding:10px;display:flex;gap:16px;font-size:12px;color:#4a505c;margin-bottom:12px">
+    <div class="card" style="padding:10px;display:flex;gap:16px;font-size:12px;color:#aeaeb2;margin-bottom:12px">
       <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff453a;margin-right:5px"></span>Varış noktası</span>
       <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff9f0a;margin-right:5px"></span>Fabrika</span>
     </div>
@@ -2100,13 +2100,13 @@ function renderAraclar() {
         const kullanan = DB.aktifSeferler.find(s=>s.plaka===a.plaka);
         const say = DB.tamamlananlar.filter(s=>s.plaka===a.plaka).length;
         const otoTuk = aracTuketim(a.plaka, "tumu");
-        return `<div style="background:#f5f7fa;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid ${kullanan?"#ff9f0a66":"#d8dce4"};margin-bottom:8px">
+        return `<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid ${kullanan?"#ff9f0a66":"#48484a"};margin-bottom:8px">
           <span style="font-size:20px">🚗</span>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${a.plaka}</div>
-            <div style="font-size:11px;color:#8a909c">${say} sefer tamamlandı</div>
-            <div style="font-size:11px;color:#4a505c;margin-top:4px">
-              ⛽ ${otoTuk>0?otoTuk.toFixed(1)+" lt/100km":"<span style='color:#8a909c'>veri bekleniyor</span>"}
+            <div style="font-size:11px;color:#636366">${say} sefer tamamlandı</div>
+            <div style="font-size:11px;color:#aeaeb2;margin-top:4px">
+              ⛽ ${otoTuk>0?otoTuk.toFixed(1)+" lt/100km":"<span style='color:#636366'>veri bekleniyor</span>"}
             </div>
           </div>
           <span class="badge ${kullanan?"badge-orange":"badge-green"}">${kullanan?kullanan.sofor+" - Yolda":"Müsait"}</span>
@@ -2161,15 +2161,15 @@ function renderSoforler() {
       ${DB.soforler.map((s,i)=>{
         const yolda = DB.aktifSeferler.find(a=>a.sofor===s.isim);
         const say = DB.tamamlananlar.filter(a=>a.sofor===s.isim).length;
-        return `<div onclick="soforSec('${s.isim}')" style="background:#f5f7fa;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;border:1px solid ${yolda?"#ff9f0a66":"#d8dce4"};cursor:pointer;margin-bottom:8px">
-          <div style="width:36px;height:36px;border-radius:50%;background:${yolda?"#ff9f0a22":"#3a3a3c"};border:2px solid ${yolda?"#ff9f0a":"#d8dce4"};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🧑‍✈️</div>
+        return `<div onclick="soforSec('${s.isim}')" style="background:#1c1c1e;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;border:1px solid ${yolda?"#ff9f0a66":"#48484a"};cursor:pointer;margin-bottom:8px">
+          <div style="width:36px;height:36px;border-radius:50%;background:${yolda?"#ff9f0a22":"#3a3a3c"};border:2px solid ${yolda?"#ff9f0a":"#48484a"};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🧑‍✈️</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${s.isim}</div>
-            <div style="font-size:11px;color:#8a909c">PIN: ${s.pin} • ${say} sefer</div>
+            <div style="font-size:11px;color:#636366">PIN: ${s.pin} • ${say} sefer</div>
           </div>
           <span class="badge ${yolda?"badge-orange":"badge-green"}">${yolda?"Yolda":"Müsait"}</span>
           <button onclick="event.stopPropagation();soforSil('${s.isim}')" style="background:none;color:#ff453a;font-size:18px;padding:0;${yolda?"opacity:.3;cursor:not-allowed":""}"${yolda?'disabled':''}>🗑️</button>
-          <span style="color:#8a909c;font-size:16px">›</span>
+          <span style="color:#636366;font-size:16px">›</span>
         </div>`;
       }).join("")}
     </div>
@@ -2210,11 +2210,11 @@ function renderSoforDetay() {
   const yolda = sAktif.length>0;
   setContent(`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <button onclick="SEL_SOFOR=null;renderSoforler()" style="background:#ffffff;border:1px solid #d8dce4;border-radius:8px;padding:6px 12px;color:#4a505c;font-size:12px">← Geri</button>
+      <button onclick="SEL_SOFOR=null;renderSoforler()" style="background:#2c2c2e;border:1px solid #48484a;border-radius:8px;padding:6px 12px;color:#aeaeb2;font-size:12px">← Geri</button>
       <div style="font-weight:700;font-size:15px">🧑‍✈️ ${SEL_SOFOR}</div>
       <span class="badge ${yolda?"badge-orange":"badge-green"}" style="margin-left:auto">${yolda?"Yolda":"Müsait"}</span>
     </div>
-    <div style="display:flex;background:#ffffff;border-radius:10px;padding:4px;gap:4px;margin-bottom:12px">
+    <div style="display:flex;background:#2c2c2e;border-radius:10px;padding:4px;gap:4px;margin-bottom:12px">
       <button onclick="SEL_SOFOR_TAB='cikis';renderSoforDetay()" style="flex:1;padding:8px;border:none;border-radius:8px;background:${SEL_SOFOR_TAB==='cikis'?'#0a84ff':'transparent'};color:${SEL_SOFOR_TAB==='cikis'?'#fff':'#636366'};font-size:12px;font-weight:600">🚀 Çıkış Ekranı</button>
       <button onclick="SEL_SOFOR_TAB='aktif';renderSoforDetay()" style="flex:1;padding:8px;border:none;border-radius:8px;background:${SEL_SOFOR_TAB==='aktif'?'#0a84ff':'transparent'};color:${SEL_SOFOR_TAB==='aktif'?'#fff':'#636366'};font-size:12px;font-weight:600">🟡 Yolda (${sAktif.length})</button>
     </div>
@@ -2281,7 +2281,7 @@ function renderKonumlar() {
 
     ${DUZ_KONUM_ID!==null?`
     <div style="position:fixed;inset:0;background:#000000bb;display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px">
-      <div style="background:#ffffff;border-radius:16px;padding:20px;max-width:340px;width:100%">
+      <div style="background:#2c2c2e;border-radius:16px;padding:20px;max-width:340px;width:100%">
         <div style="font-size:15px;font-weight:700;margin-bottom:14px">✏️ Konumu Düzenle</div>
         <div class="field" style="margin-bottom:8px"><label>Konum Adı *</label><input type="text" id="duz-isim"/></div>
         <div class="field" style="margin-bottom:8px"><label>Açıklama</label><input type="text" id="duz-adres"/></div>
@@ -2290,7 +2290,7 @@ function renderKonumlar() {
           <div class="field"><label>Boylam *</label><input type="number" id="duz-lng" step="any"/></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px">
-          <button onclick="DUZ_KONUM_ID=null;renderKonumlar()" style="flex:1;padding:10px;background:#eef1f6;border:none;border-radius:8px;color:#1c2230;font-weight:600">İptal</button>
+          <button onclick="DUZ_KONUM_ID=null;renderKonumlar()" style="flex:1;padding:10px;background:#3a3a3c;border:none;border-radius:8px;color:#f2f2f7;font-weight:600">İptal</button>
           <button onclick="konumKaydet()" style="flex:1;padding:10px;background:#0a84ff;border:none;border-radius:8px;color:#fff;font-weight:600">Kaydet</button>
         </div>
       </div>
@@ -2311,20 +2311,20 @@ function renderKonumlar() {
 
     <div class="card">
       <div class="section-title">Kayıtlı Konumlar</div>
-      <div style="background:#f5f7fa;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid #0a84ff44;margin-bottom:8px">
+      <div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid #0a84ff44;margin-bottom:8px">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">🏭 ${DB.fabrika.isim}</div>
-          <div style="font-size:11px;color:#8a909c">${DB.fabrika.lat}, ${DB.fabrika.lng}</div>
+          <div style="font-size:11px;color:#636366">${DB.fabrika.lat}, ${DB.fabrika.lng}</div>
         </div>
         <span class="badge badge-orange">Ana Fabrika</span>
         <a href="https://www.google.com/maps?q=${DB.fabrika.lat},${DB.fabrika.lng}" target="_blank" style="font-size:18px;text-decoration:none">🗺️</a>
         <button onclick="konumDuzenle('fabrika')" style="background:none;color:#0a84ff;font-size:18px;padding:0">✏️</button>
       </div>
       ${DB.konumlar.map(k=>{
-        return `<div style="background:#f5f7fa;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid #d8dce4;margin-bottom:8px">
+        return `<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px;border:1px solid #48484a;margin-bottom:8px">
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700">${k.isim}</div>
-            ${k.adres?`<div style="font-size:11px;color:#8a909c">${k.adres}</div>`:""}
+            ${k.adres?`<div style="font-size:11px;color:#636366">${k.adres}</div>`:""}
           </div>
           ${(k.lat!=null && k.lng!=null) ? `<a href="https://www.google.com/maps?q=${k.lat},${k.lng}" target="_blank" style="font-size:18px;text-decoration:none">🗺️</a>` : `<span title="Konum bekleniyor" style="font-size:13px;color:#8a8f99">📍—</span>`}
           <button onclick="konumDuzenle(${k.id})" style="background:none;color:#0a84ff;font-size:18px;padding:0">✏️</button>
@@ -2402,14 +2402,14 @@ function renderYakit() {
         <label>Güncel Litre Fiyatı (TL) *</label>
         <input type="number" id="litre-fiyat" placeholder="42.50" value="${DB.litreFiyati}" oninput="DB.litreFiyati=this.value;litreFiyatiGuncelleDB(this.value);litreFiyatiGuncelle()"/>
       </div>
-      <div id="litre-fiyat-bilgi" style="margin-top:8px;background:#f5f7fa;border-radius:8px;padding:8px 12px;font-size:12px;color:#4a505c;display:${DB.litreFiyati?"block":"none"}">
+      <div id="litre-fiyat-bilgi" style="margin-top:8px;background:#1c1c1e;border-radius:8px;padding:8px 12px;font-size:12px;color:#aeaeb2;display:${DB.litreFiyati?"block":"none"}">
         ${DB.litreFiyati?`💡 1 litre = <strong style="color:#0a84ff">${parseFloat(DB.litreFiyati).toFixed(2)} TL</strong>`:""}
       </div>
     </div>`:""}
 
-    ${KUL.rol==="yakit"?`<div style="background:#ffffff;border:1px solid #30d15844;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    ${KUL.rol==="yakit"?`<div style="background:#2c2c2e;border:1px solid #30d15844;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="font-size:24px">⛽</span>
-      <div><div style="font-weight:700">Yakıt Personeli</div><div style="font-size:11px;color:#8a909c">Yakıt girişi yapabilirsiniz.</div></div>
+      <div><div style="font-weight:700">Yakıt Personeli</div><div style="font-size:11px;color:#636366">Yakıt girişi yapabilirsiniz.</div></div>
     </div>`:""}
 
     <div class="card">
@@ -2462,10 +2462,10 @@ function yakitHesapla() {
   if(!el) return;
   if(litre>0) {
     el.style.display="block";
-    el.innerHTML=`<div style="background:#f5f7fa;border-radius:8px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px">
-      <div><div style="color:#8a909c;font-size:10px;text-transform:uppercase;letter-spacing:1px">Alınan Yakıt</div>
+    el.innerHTML=`<div style="background:#1c1c1e;border-radius:8px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:10px">
+      <div><div style="color:#636366;font-size:10px;text-transform:uppercase;letter-spacing:1px">Alınan Yakıt</div>
       <div style="color:#30d158;font-weight:700;font-size:18px;margin-top:4px">${litre} Litre</div></div>
-      ${KUL.rol==="admin"&&fiyat>0?`<div><div style="color:#8a909c;font-size:10px;text-transform:uppercase;letter-spacing:1px">Toplam Tutar</div>
+      ${KUL.rol==="admin"&&fiyat>0?`<div><div style="color:#636366;font-size:10px;text-transform:uppercase;letter-spacing:1px">Toplam Tutar</div>
       <div style="color:#ff9f0a;font-weight:700;font-size:18px;margin-top:4px">${(litre*fiyat).toFixed(2)} TL</div></div>`:""}
     </div>`;
   } else el.style.display="none";
@@ -2872,9 +2872,9 @@ function renderYakitListe() {
         <div class="field"><label>Bitiş</label><input type="date" value="${fBit}" onchange="yakitFiltre('bit',this.value)"/></div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="yakitHizliFiltre(7)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 7 Gün</button>
-        <button onclick="yakitHizliFiltre(30)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="yakitHizliFiltre(0)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Tümü</button>
+        <button onclick="yakitHizliFiltre(7)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 7 Gün</button>
+        <button onclick="yakitHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="yakitHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
       </div>
     </div>
 
@@ -2891,17 +2891,17 @@ function renderYakitListe() {
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <div>
             <div style="font-weight:700;font-size:14px">${y.sofor}</div>
-            <div style="font-size:11px;color:#8a909c">${y.tarih}${y.saat?" • "+y.saat:""} • ${y.plaka}</div>
-            ${y.kaydeden?`<div style="font-size:10px;color:#8a909c">Kaydeden: ${y.kaydeden}</div>`:""}
+            <div style="font-size:11px;color:#636366">${y.tarih}${y.saat?" • "+y.saat:""} • ${y.plaka}</div>
+            ${y.kaydeden?`<div style="font-size:10px;color:#636366">Kaydeden: ${y.kaydeden}</div>`:""}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
             <span class="badge badge-green">${y.litre} lt</span>
             ${isAdmin&&y.tutar>0?`<span class="badge badge-orange">${y.tutar.toLocaleString()} TL</span>`:""}
           </div>
         </div>
-        <div style="background:#f5f7fa;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;font-size:11px;color:#8a909c">
+        <div style="background:#1c1c1e;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;font-size:11px;color:#636366">
           <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <div>⛽ <span style="color:#1c2230">${y.litre} litre</span></div>
+            <div>⛽ <span style="color:#f2f2f7">${y.litre} litre</span></div>
             ${isAdmin&&y.tutar>0?`<div>💰 <span style="color:#ff9f0a">${y.tutar.toLocaleString("tr-TR")} TL</span></div>`:""}
             ${isAdmin&&y.tutar>0?`<div>📊 <span style="color:#0a84ff">${(y.tutar/y.litre).toFixed(2)} TL/lt</span></div>`:""}
           </div>
@@ -2974,7 +2974,7 @@ function renderBakimListe() {
     html+=`<div class="card"><div class="section-title">Araç Bakım Durumu</div>`;
     DB.araclar.forEach(a=>{
       const ab = DB.bakimlar.filter(b=>b.plaka===a.plaka);
-      html+=`<div style="background:#f5f7fa;border-radius:10px;padding:12px 14px;border:1px solid #d8dce4;margin-bottom:8px">
+      html+=`<div style="background:#1c1c1e;border-radius:10px;padding:12px 14px;border:1px solid #48484a;margin-bottom:8px">
         <div style="font-weight:700;font-size:14px;margin-bottom:8px">🚗 ${a.plaka}</div>
         <div class="arac-durum-grid">`;
       BAKIM_TURLERI.forEach(tur=>{
@@ -3000,18 +3000,18 @@ function renderBakimListe() {
     DB.bakimlar.forEach(b=>{
       const gec=b.sonrakiTarih&&new Date(b.sonrakiTarih)<bugun;
       const yak=b.sonrakiTarih&&!gec&&(new Date(b.sonrakiTarih)-bugun)/(1000*60*60*24)<=30;
-      html+=`<div style="background:#f5f7fa;border-radius:8px;padding:10px 12px;border:1px solid ${gec?"#ff453a":yak?"#ff9f0a":"#d8dce4"};margin-bottom:8px">
+      html+=`<div style="background:#1c1c1e;border-radius:8px;padding:10px 12px;border:1px solid ${gec?"#ff453a":yak?"#ff9f0a":"#48484a"};margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
           <div>
             <span style="font-weight:700;font-size:14px">${b.plaka}</span>
-            <span style="margin-left:8px;background:#ffffff;border:1px solid #d8dce4;border-radius:6px;padding:2px 8px;font-size:11px;color:#4a505c">${b.tur}</span>
+            <span style="margin-left:8px;background:#2c2c2e;border:1px solid #48484a;border-radius:6px;padding:2px 8px;font-size:11px;color:#aeaeb2">${b.tur}</span>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             ${b.maliyet>0?`<span class="badge badge-orange">${b.maliyet.toLocaleString()} TL</span>`:""}
             <button onclick="bakimSil(${b.id})" style="background:none;color:#ff453a;font-size:16px;padding:0;border:none;cursor:pointer">🗑️</button>
           </div>
         </div>
-        <div style="font-size:11px;color:#8a909c;display:flex;gap:12px;flex-wrap:wrap">
+        <div style="font-size:11px;color:#636366;display:flex;gap:12px;flex-wrap:wrap">
           <span>📅 ${b.tarih}</span>
           ${b.sonrakiTarih?`<span style="color:${gec?"#ff453a":yak?"#ff9f0a":"#636366"}">⏭️ ${b.sonrakiTarih}${gec?" 🚨":yak?" ⚠️":""}</span>`:""}
           ${b.km>0?`<span>🛣️ ${b.km.toLocaleString()} km</span>`:""}
@@ -3120,7 +3120,7 @@ function renderAyarlar() {
   setContent(`
     <div class="card">
       <div class="section-title">💾 Veri Yedekleme</div>
-      <div style="font-size:12px;color:#4a505c;margin-bottom:10px">Tüm verileri (sefer, yakıt, bakım, nakliye, iş, talep, kaza, mesai, araç, konum, şoför) tek Excel dosyasına indirir. Düzenli yedek almanız önerilir.</div>
+      <div style="font-size:12px;color:#aeaeb2;margin-bottom:10px">Tüm verileri (sefer, yakıt, bakım, nakliye, iş, talep, kaza, mesai, araç, konum, şoför) tek Excel dosyasına indirir. Düzenli yedek almanız önerilir.</div>
       <button class="btn btn-green" onclick="tumVeriYedekle()">💾 Tüm Verileri Yedekle (Excel)</button>
     </div>
 
@@ -3232,10 +3232,10 @@ function renderExcel() {
         <div class="field"><label>Bitiş</label><input type="date" id="exc-bit" onchange="excOnizlemeGuncelle()" value="${bugun}"/></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="excHizliFiltre(7)" style="padding:6px 12px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">Son 7 Gün</button>
-        <button onclick="excHizliFiltre(30)" style="padding:6px 12px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="excHizliFiltre(90)" style="padding:6px 12px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">Son 90 Gün</button>
-        <button onclick="excHizliFiltre(365)" style="padding:6px 12px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">Bu Yıl</button>
+        <button onclick="excHizliFiltre(7)" style="padding:6px 12px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">Son 7 Gün</button>
+        <button onclick="excHizliFiltre(30)" style="padding:6px 12px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="excHizliFiltre(90)" style="padding:6px 12px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">Son 90 Gün</button>
+        <button onclick="excHizliFiltre(365)" style="padding:6px 12px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">Bu Yıl</button>
       </div>
     </div>
 
@@ -3697,13 +3697,13 @@ function renderIsListe() {
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-        <button onclick="isFiltreTarih('${bugun}')" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Bugün</button>
-        <button onclick="isFiltreTarih('${new Date(Date.now()-86400000).toISOString().split('T')[0]}')" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Dün</button>
+        <button onclick="isFiltreTarih('${bugun}')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bugün</button>
+        <button onclick="isFiltreTarih('${new Date(Date.now()-86400000).toISOString().split('T')[0]}')" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Dün</button>
       </div>
-      <div style="font-size:12px;color:#8a909c">
+      <div style="font-size:12px;color:#636366">
         ${isler.length} iş • <span style="color:#ff9f0a">${bekleyen} bekliyor</span> • <span style="color:#30d158">${tamamlanan} Tamamlandı</span> • <span style="color:#ff453a">${olmayan} Tamamlanamadı</span>
       </div>
-      ${uyumYuzde!==null?`<div style="margin-top:8px;background:#f5f7fa;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
+      ${uyumYuzde!==null?`<div style="margin-top:8px;background:#1c1c1e;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:12px;color:#8fa3c4;font-weight:600">📊 Plan Gerçekleşen Uyum</span>
         <span style="font-size:18px;font-weight:800;color:${uyumYuzde>=85?'#30d158':uyumYuzde>=60?'#ff9f0a':'#ff453a'}">${uyumYuzde}%</span>
       </div>`:""}
@@ -3723,8 +3723,8 @@ function renderIsListe() {
           var tamam = is.durum==="Tamamlandı";
           var olmadi = is.durum==="Tamamlanamadı";
           var nokta = tamam?"#30d158":olmadi?"#ff453a":"#ff9f0a";
-          var firmaStil = tamam?"text-decoration:line-through;color:#8a8f99":olmadi?"color:#ff8a80":"color:#1c2230";
-          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #e8ebf0">' +
+          var firmaStil = tamam?"text-decoration:line-through;color:#8a8f99":olmadi?"color:#ff8a80":"color:#f2f2f7";
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #2c2c2e">' +
             '<span style="width:8px;height:8px;border-radius:50%;background:'+nokta+';flex-shrink:0"></span>' +
             '<div style="flex:1;font-size:13px;font-weight:600;'+firmaStil+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+is.firma+
               (is.kaynak==="talep"?' <span style="font-size:8px;background:#ff9f0a22;color:#ff9f0a;border-radius:4px;padding:1px 4px">🚗</span>':"")+
@@ -3733,7 +3733,7 @@ function renderIsListe() {
             '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">' +
             '<button onclick="isDurumSet('+is.id+',\'Tamamlandı\')" style="background:'+(tamam?"#30d158":"#30d15822")+';border:1px solid #30d158;border-radius:6px;padding:3px 8px;color:'+(tamam?"#fff":"#30d158")+';font-size:11px;cursor:pointer">✓</button>' +
             '<button onclick="isDurumSet('+is.id+',\'Tamamlanamadı\')" style="background:'+(olmadi?"#ff453a":"#ff453a22")+';border:1px solid #ff453a;border-radius:6px;padding:3px 8px;color:'+(olmadi?"#fff":"#ff453a")+';font-size:11px;cursor:pointer">✗</button>' +
-            '<button onclick="isSil('+is.id+')" style="background:none;border:none;color:#8a909c;font-size:15px;cursor:pointer;padding:0 2px">🗑️</button>' +
+            '<button onclick="isSil('+is.id+')" style="background:none;border:none;color:#636366;font-size:15px;cursor:pointer;padding:0 2px">🗑️</button>' +
             '</div></div>';
         }).join("") : "";
         return '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">' +
@@ -3744,14 +3744,14 @@ function renderIsListe() {
           '</div>' +
           '<span style="font-size:11px;color:'+(bekSay>0?"#ff9f0a":"#636366")+';font-weight:600">'+bekSay+' bekliyor • '+katIslerHepsi.length+' iş</span>' +
           '</div>' +
-          (acik?'<div style="padding:0 14px 10px">'+ (satirlar||'<div style="font-size:12px;color:#8a909c;padding:8px 0">Bu kategoride gösterilecek iş yok.</div>') +'</div>':'') +
+          (acik?'<div style="padding:0 14px 10px">'+ (satirlar||'<div style="font-size:12px;color:#636366;padding:8px 0">Bu kategoride gösterilecek iş yok.</div>') +'</div>':'') +
           '</div>';
       }).join("");
     })()}
 
     ${isler.filter(function(i){return i.durum==="Tamamlandı"||i.durum==="Tamamlanamadı";}).length>0?`
     <div style="margin-bottom:10px;text-align:center">
-      <button onclick="isTamamGosterToggle()" style="padding:7px 14px;background:#ffffff;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">
+      <button onclick="isTamamGosterToggle()" style="padding:7px 14px;background:#2c2c2e;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">
         ${window.IS_TAMAM_GOSTER===true?"🙈 Tamamlananları Gizle":"👁️ Tamamlananları Göster"}
       </button>
     </div>`:""}
@@ -4000,7 +4000,7 @@ function renderMesailer() {
             <input type="time" id="m-bit" oninput="mesaiSureHesapla()"/>
           </div>
         </div>
-        <div id="mesai-sure" style="display:none;background:#f5f7fa;border-radius:8px;padding:8px 12px;font-size:12px"></div>
+        <div id="mesai-sure" style="display:none;background:#1c1c1e;border-radius:8px;padding:8px 12px;font-size:12px"></div>
         <div class="field">
           <label>Açıklama</label>
           <input type="text" id="m-aciklama" placeholder="Ek bilgi..."/>
@@ -4048,10 +4048,10 @@ function renderMesaiListe() {
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button onclick="mesaiHizliFiltre(1)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Bugün</button>
-          <button onclick="mesaiHizliFiltre(7)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 7 Gün</button>
-          <button onclick="mesaiHizliFiltre(30)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 30 Gün</button>
-          <button onclick="mesaiHizliFiltre(0)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Tümü</button>
+          <button onclick="mesaiHizliFiltre(1)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Bugün</button>
+          <button onclick="mesaiHizliFiltre(7)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 7 Gün</button>
+          <button onclick="mesaiHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+          <button onclick="mesaiHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
         </div>
       </div>
     </div>
@@ -4061,7 +4061,7 @@ function renderMesaiListe() {
       <span style="font-size:24px">⏰</span>
       <div>
         <div style="font-size:18px;font-weight:800;color:#0a84ff">${formatSure(toplamDk)}</div>
-        <div style="font-size:11px;color:#8a909c">${mesailer.length} kayıt • Toplam Mesai</div>
+        <div style="font-size:11px;color:#636366">${mesailer.length} kayıt • Toplam Mesai</div>
       </div>
     </div>`:""}
 
@@ -4074,8 +4074,8 @@ function renderMesaiListe() {
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<div>' +
         '<div style="font-weight:700;font-size:14px">'+m.sofor+'</div>' +
-        '<div style="font-size:11px;color:#8a909c">'+m.tarih+' • '+m.baslangic+' - '+m.bitis+'</div>' +
-        (m.aciklama?'<div style="font-size:11px;color:#8a909c">💬 '+m.aciklama+'</div>':"") +
+        '<div style="font-size:11px;color:#636366">'+m.tarih+' • '+m.baslangic+' - '+m.bitis+'</div>' +
+        (m.aciklama?'<div style="font-size:11px;color:#636366">💬 '+m.aciklama+'</div>':"") +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
         '<span class="badge badge-blue">⏱️ '+formatSure(m.sure_dakika)+'</span>' +
@@ -4206,9 +4206,9 @@ function renderNakliyeListe() {
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="nakliyeHizliFiltre(30)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="nakliyeHizliFiltre(90)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 90 Gün</button>
-        <button onclick="nakliyeHizliFiltre(0)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Tümü</button>
+        <button onclick="nakliyeHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="nakliyeHizliFiltre(90)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 90 Gün</button>
+        <button onclick="nakliyeHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
       </div>
     </div>
 
@@ -4227,8 +4227,8 @@ function renderNakliyeListe() {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="flex:1">' +
         '<div style="font-weight:700;font-size:14px">📍 '+n.sevk_adresi+'</div>' +
-        '<div style="font-size:11px;color:#8a909c">📅 '+n.tarih+'</div>' +
-        (n.aciklama?'<div style="font-size:11px;color:#8a909c">💬 '+n.aciklama+'</div>':"") +
+        '<div style="font-size:11px;color:#636366">📅 '+n.tarih+'</div>' +
+        (n.aciklama?'<div style="font-size:11px;color:#636366">💬 '+n.aciklama+'</div>':"") +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         (KUL.rol==="admin"
@@ -4378,9 +4378,9 @@ function renderKazaListe() {
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="kazaHizliFiltre(30)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 30 Gün</button>
-        <button onclick="kazaHizliFiltre(365)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Son 1 Yıl</button>
-        <button onclick="kazaHizliFiltre(0)" style="padding:5px 10px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:11px;cursor:pointer">Tümü</button>
+        <button onclick="kazaHizliFiltre(30)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 30 Gün</button>
+        <button onclick="kazaHizliFiltre(365)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Son 1 Yıl</button>
+        <button onclick="kazaHizliFiltre(0)" style="padding:5px 10px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:11px;cursor:pointer">Tümü</button>
       </div>
     </div>
 
@@ -4399,7 +4399,7 @@ function renderKazaListe() {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="flex:1">' +
         '<div style="font-weight:700;font-size:14px">⚠️ '+(k.kisi||"Kaza kaydı")+'</div>' +
-        '<div style="font-size:11px;color:#8a909c">📅 '+k.tarih+(k.arac?' • 🚗 '+k.arac:"")+'</div>' +
+        '<div style="font-size:11px;color:#636366">📅 '+k.tarih+(k.arac?' • 🚗 '+k.arac:"")+'</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         '<span class="badge" style="background:'+renkAgirlik(k.agirlik)+'22;color:'+renkAgirlik(k.agirlik)+'">'+k.agirlik+'</span>' +
@@ -4456,7 +4456,7 @@ function kazaDetay(id) {
     '<div style="margin-bottom:8px"><b>📅 Tarih:</b> '+(k.tarih||"-")+'</div>' +
     (k.kisi?'<div style="margin-bottom:8px"><b>👤 Kişi:</b> '+k.kisi+'</div>':"") +
     (k.arac?'<div style="margin-bottom:8px"><b>🚗 Araç:</b> '+k.arac+'</div>':"") +
-    '<div style="margin-top:12px;background:#ffffff;border-radius:10px;padding:12px;word-break:break-word;overflow-wrap:break-word"><b>Açıklama:</b><br>'+(k.aciklama||"(açıklama yok)")+'</div>';
+    '<div style="margin-top:12px;background:#2c2c2e;border-radius:10px;padding:12px;word-break:break-word;overflow-wrap:break-word"><b>Açıklama:</b><br>'+(k.aciklama||"(açıklama yok)")+'</div>';
   document.getElementById("kaza-modal-icerik").innerHTML = html;
   // Görüntüleme moduna al
   document.getElementById("kaza-modal-icerik").style.display = "block";
@@ -4541,26 +4541,26 @@ async function talepSorgula() {
     document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#ff453a;font-size:12px">Ad soyad girin!</div>';
     return; 
   }
-  document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#8a909c;font-size:12px;text-align:center">Yükleniyor...</div>';
+  document.getElementById("sorgula-sonuc").innerHTML = '<div style="color:#636366;font-size:12px;text-align:center">Yükleniyor...</div>';
   try {
     const {data, error} = await supa.from("talepler").select("*").eq("isim", isim).order("created_at", {ascending:false});
     if(error) throw error;
     if(!data || data.length===0) {
-      document.getElementById("sorgula-sonuc").innerHTML = '<div style="text-align:center;color:#8a909c;padding:20px">Bu isme ait talep bulunamadı.</div>';
+      document.getElementById("sorgula-sonuc").innerHTML = '<div style="text-align:center;color:#636366;padding:20px">Bu isme ait talep bulunamadı.</div>';
       return;
     }
-    var html = '<div style="font-size:12px;color:#8a909c;margin-bottom:10px">'+data.length+' talep bulundu</div>';
+    var html = '<div style="font-size:12px;color:#636366;margin-bottom:10px">'+data.length+' talep bulundu</div>';
     data.forEach(function(t) {
       var renk = t.durum==="Onaylandı"?"#30d158":t.durum==="Reddedildi"?"#ff453a":"#ff9f0a";
       var icon = t.durum==="Onaylandı"?"✅":t.durum==="Reddedildi"?"❌":"⏳";
-      html += '<div style="background:#ffffff;border:1px solid #d8dce4;border-left:3px solid '+renk+';border-radius:10px;padding:12px;margin-bottom:10px">' +
+      html += '<div style="background:#2c2c2e;border:1px solid #48484a;border-left:3px solid '+renk+';border-radius:10px;padding:12px;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<div style="font-size:12px;color:#8a909c">'+t.tarih+' • '+t.saat+'</div>' +
+        '<div style="font-size:12px;color:#636366">'+t.tarih+' • '+t.saat+'</div>' +
         '<span style="background:'+renk+'22;color:'+renk+';border:1px solid '+renk+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">'+icon+' '+t.durum+'</span>' +
         '</div>' +
-        '<div style="font-size:13px;font-weight:700;color:#1c2230;margin-bottom:3px">📍 '+t.nereye+'</div>' +
-        (t.departman?'<div style="font-size:11px;color:#8a909c">🏢 '+t.departman+'</div>':'') +
-        (t.aciklama?'<div style="font-size:11px;color:#8a909c">💬 '+t.aciklama+'</div>':'') +
+        '<div style="font-size:13px;font-weight:700;color:#f2f2f7;margin-bottom:3px">📍 '+t.nereye+'</div>' +
+        (t.departman?'<div style="font-size:11px;color:#636366">🏢 '+t.departman+'</div>':'') +
+        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':'') +
         (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="margin-top:8px;background:#ff453a18;border:1px solid #ff453a55;border-radius:8px;padding:8px;font-size:12px;color:#ff453a"><b>Red Gerekçesi:</b> '+t.red_nedeni+'</div>':'') +
         '</div>';
     });
@@ -4699,9 +4699,9 @@ function renderTalepler() {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
         '<div>' +
         '<div style="font-weight:700;font-size:14px">'+t.isim+'</div>' +
-        '<div style="font-size:12px;color:#4a505c">🏢 '+t.departman+'  •  📍 '+t.nereye+'</div>' +
-        '<div style="font-size:11px;color:#8a909c">📅 '+t.tarih+' • 🕐 '+t.saat+'</div>' +
-        (t.aciklama?'<div style="font-size:11px;color:#8a909c">💬 '+t.aciklama+'</div>':"") +
+        '<div style="font-size:12px;color:#aeaeb2">🏢 '+t.departman+'  •  📍 '+t.nereye+'</div>' +
+        '<div style="font-size:11px;color:#636366">📅 '+t.tarih+' • 🕐 '+t.saat+'</div>' +
+        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':"") +
         (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="font-size:11px;color:#ff453a;margin-top:4px">🚫 Red: '+t.red_nedeni+'</div>':"") +
         '</div>' +
         '<span class="badge '+badgeClass+'">'+t.durum+'</span>' +
@@ -4711,9 +4711,9 @@ function renderTalepler() {
           '<button onclick="talepOnayla('+t.id+')" style="flex:1;padding:7px;background:#30d158;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">✅ Onayla</button>' +
           '<button onclick="talepReddet('+t.id+')" style="flex:1;padding:7px;background:#ff453a;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">❌ Reddet</button>'
         : t.durum==="Reddedildi" ?
-          '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
+          '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
         :
-          '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#eef1f6;border:1px solid #d8dce4;border-radius:8px;color:#4a505c;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
+          '<button onclick="talepBekleyeAl('+t.id+')" style="flex:1;padding:7px;background:#3a3a3c;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">↩ Beklemeye Al</button>'
         ) +
         '<button onclick="talepSil('+t.id+')" style="padding:7px 12px;background:none;border:1px solid #ff453a;border-radius:8px;color:#ff453a;font-size:12px;cursor:pointer">🗑️</button>' +
         '</div></div>';
