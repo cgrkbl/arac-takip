@@ -3711,15 +3711,15 @@ function renderIsListe() {
 
     ${isler.length===0?'<div class="empty"><div class="empty-icon">📋</div>Bu tarihte iş kaydı yok.</div>':""}
 
-    ${IS_KATEGORILER.map(function(kat) {
-      var katIsler = isler.filter(function(i){ return i.kategori===kat; });
-      if(katIsler.length===0) return "";
-      return '<div class="card" style="margin-bottom:10px;padding:10px 12px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-        '<div class="section-title" style="margin-bottom:0">' + kat.toUpperCase() + '</div>' +
-        '<span style="font-size:11px;color:#636366">' + katIsler.length + ' iş</span>' +
-        '</div>' +
-        katIsler.map(function(is) {
+    ${(()=>{
+      var tamamGoster = window.IS_TAMAM_GOSTER===true;
+      return IS_KATEGORILER.map(function(kat) {
+        var katIslerHepsi = isler.filter(function(i){ return i.kategori===kat; });
+        if(katIslerHepsi.length===0) return "";
+        var katIsler = tamamGoster ? katIslerHepsi : katIslerHepsi.filter(function(i){ return i.durum!=="Tamamlandı" && i.durum!=="Tamamlanamadı"; });
+        var bekSay = katIslerHepsi.filter(function(i){ return i.durum!=="Tamamlandı" && i.durum!=="Tamamlanamadı"; }).length;
+        var acik = (window.IS_ACIK_KAT||{})[kat] === true;
+        var satirlar = acik ? katIsler.map(function(is) {
           var tamam = is.durum==="Tamamlandı";
           var olmadi = is.durum==="Tamamlanamadı";
           var nokta = tamam?"#30d158":olmadi?"#ff453a":"#ff9f0a";
@@ -3735,9 +3735,26 @@ function renderIsListe() {
             '<button onclick="isDurumSet('+is.id+',\'Tamamlanamadı\')" style="background:'+(olmadi?"#ff453a":"#ff453a22")+';border:1px solid #ff453a;border-radius:6px;padding:3px 8px;color:'+(olmadi?"#fff":"#ff453a")+';font-size:11px;cursor:pointer">✗</button>' +
             '<button onclick="isSil('+is.id+')" style="background:none;border:none;color:#636366;font-size:15px;cursor:pointer;padding:0 2px">🗑️</button>' +
             '</div></div>';
-        }).join("") +
-        '</div>';
-    }).join("")}
+        }).join("") : "";
+        return '<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden">' +
+          '<div onclick="isKatAc(\''+kat.replace(/'/g,"")+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-size:12px;color:#8fa3c4;transition:transform .2s;transform:rotate('+(acik?"90":"0")+'deg)">▶</span>' +
+          '<span style="font-size:12px;font-weight:700;color:#d1c4e9;letter-spacing:.5px">'+kat.toUpperCase()+'</span>' +
+          '</div>' +
+          '<span style="font-size:11px;color:'+(bekSay>0?"#ff9f0a":"#636366")+';font-weight:600">'+bekSay+' bekliyor • '+katIslerHepsi.length+' iş</span>' +
+          '</div>' +
+          (acik?'<div style="padding:0 14px 10px">'+ (satirlar||'<div style="font-size:12px;color:#636366;padding:8px 0">Bu kategoride gösterilecek iş yok.</div>') +'</div>':'') +
+          '</div>';
+      }).join("");
+    })()}
+
+    ${isler.filter(function(i){return i.durum==="Tamamlandı"||i.durum==="Tamamlanamadı";}).length>0?`
+    <div style="margin-bottom:10px;text-align:center">
+      <button onclick="isTamamGosterToggle()" style="padding:7px 14px;background:#2c2c2e;border:1px solid #48484a;border-radius:8px;color:#aeaeb2;font-size:12px;cursor:pointer">
+        ${window.IS_TAMAM_GOSTER===true?"🙈 Tamamlananları Gizle":"👁️ Tamamlananları Göster"}
+      </button>
+    </div>`:""}
 
     <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-green" onclick="isExcel()" style="flex:1;min-width:160px">📥 İş Listesini Excel'e Aktar</button>
@@ -3789,6 +3806,15 @@ async function isSil(id) {
 
 function isFiltreTarih(t) { window.IS_FILTRE_TARIH=t; window.IS_FILTRE_TARIH_MANUEL=true; renderIsListe(); }
 function isFiltreKat(k) { window.IS_FILTRE_KAT=k; renderIsListe(); }
+function isKatAc(kat) {
+  window.IS_ACIK_KAT = window.IS_ACIK_KAT || {};
+  window.IS_ACIK_KAT[kat] = !window.IS_ACIK_KAT[kat];
+  renderIsListe();
+}
+function isTamamGosterToggle() {
+  window.IS_TAMAM_GOSTER = !(window.IS_TAMAM_GOSTER===true);
+  renderIsListe();
+}
 
 async function aracPlanExcel() {
   var isler = (DB.isler||[]).slice().sort(function(a,b){ return (a.tarih||"").localeCompare(b.tarih||""); });
