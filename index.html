@@ -4762,10 +4762,23 @@ function renderIrsaliyeList() {
       '<div style="font-size:11px;color:#636366;margin-top:2px">📅 '+(i.tarih||"-")+(i.no?' • No: '+i.no:"")+'</div>' +
       (i.aciklama?'<div style="font-size:12px;color:#aeaeb2;margin-top:6px;word-break:break-word">'+i.aciklama+'</div>':"") +
       '</div>' +
-      '<a href="'+(i.foto||"#")+'" target="_blank" style="background:#7e57c2;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0">📷 Gör</a>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">' +
+      '<a href="'+(i.foto||"#")+'" target="_blank" style="background:#7e57c2;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📷 Gör</a>' +
+      (window._irsaliyeYetkili?'<button onclick="irsaliyeSil('+i.id+')" style="background:none;border:1px solid #ff453a;border-radius:8px;color:#ff453a;font-size:11px;cursor:pointer;padding:5px 10px;white-space:nowrap">🗑️ Sil</button>':"") +
+      '</div>' +
       '</div></div>';
   }).join("");
 }
+async function irsaliyeSil(id) {
+  if(!window._irsaliyeYetkili){ alert("Silme yetkiniz yok."); return; }
+  if(!confirm("Bu irsaliye kaydını silmek istediğinize emin misiniz?")) return;
+  try {
+    await supa.from('irsaliyeler').delete().eq('id', id);
+    DB.irsaliyeler = (DB.irsaliyeler||[]).filter(function(i){ return i.id!==id; });
+    renderIrsaliyeList();
+  } catch(e){ alert("Hata: "+(e.message||"silinemedi")); }
+}
+
 async function irsaliyeGonder() {
   var no = document.getElementById("irs-no").value.trim();
   var kategori = document.getElementById("irs-kategori").value;
