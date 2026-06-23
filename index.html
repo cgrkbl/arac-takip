@@ -409,9 +409,9 @@ textarea{resize:vertical;}
 // ═══════════════════════════════════════════
 // VERİ
 // ═══════════════════════════════════════════
-let ADMIN_PIN = "1234";
-let YAKIT_PIN = "0000";
-const IRSALIYE_PIN = "1453"; // irsaliye eklemek için
+let ADMIN_PIN = ""; // Supabase'den yüklenir (admin_pin)
+let YAKIT_PIN = ""; // Supabase'den yüklenir (yakit_pin)
+let IRSALIYE_PIN = ""; // Supabase ayarlar tablosundan yüklenir (irsaliye_pin)
 const YUKLER = ["Ham Kumaş","Boyalı Kumaş","İplik","Aksesuar","Mamul Ürün","Ambalaj Malzemesi","Kimyasal Madde","Diğer"];
 const BAKIM_TURLERI = ["Muayene","Sigorta","Bakım","Lastik","Tamir"];
 
@@ -555,9 +555,11 @@ function loginGiris() {
   if(PIN.length < 4) return;
   document.getElementById("pin-error").textContent = "";
   if(LOGIN_MOD==="admin") {
+    if(!ADMIN_PIN) { document.getElementById("pin-error").textContent="PIN yükleniyor, birazdan tekrar deneyin."; return; }
     if(PIN===ADMIN_PIN) girisYap({rol:"admin",isim:"Yönetici"});
     else { document.getElementById("pin-error").textContent="Yanlış PIN!"; PIN=""; pinGuncelle(); }
   } else if(LOGIN_MOD==="yakit") {
+    if(!YAKIT_PIN) { document.getElementById("pin-error").textContent="PIN yükleniyor, birazdan tekrar deneyin."; return; }
     if(PIN===YAKIT_PIN) girisYap({rol:"yakit",isim:"Yakıt Personeli"});
     else { document.getElementById("pin-error").textContent="Yanlış PIN!"; PIN=""; pinGuncelle(); }
   } else {
@@ -580,6 +582,7 @@ async function loginVerisiYukle() {
       ayarlar.data.forEach(function(a) {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
         if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
+        if(a.anahtar==='irsaliye_pin') IRSALIYE_PIN=a.deger;
         if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
         if(a.anahtar==='kpi_depo_doluluk') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.depoDoluluk=a.deger; }
         if(a.anahtar==='kpi_is_kazasi') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.isKazasi=a.deger; }
@@ -3515,6 +3518,7 @@ async function dbYukle() {
       ayarlar.data.forEach(function(a) {
         if(a.anahtar==='admin_pin') ADMIN_PIN=a.deger;
         if(a.anahtar==='yakit_pin') YAKIT_PIN=a.deger;
+        if(a.anahtar==='irsaliye_pin') IRSALIYE_PIN=a.deger;
         if(a.anahtar==='litre_fiyati') DB.litreFiyati=a.deger;
         if(a.anahtar==='kpi_depo_doluluk') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.depoDoluluk=a.deger; }
         if(a.anahtar==='kpi_is_kazasi') { window.KPI_DASH=window.KPI_DASH||{depoDoluluk:"",planaUyum:"",isKazasi:""}; window.KPI_DASH.isKazasi=a.deger; }
@@ -3784,7 +3788,7 @@ function renderIsListe() {
           var firmaStil = tamam?"text-decoration:line-through;color:#8a8f99":olmadi?"color:#ff8a80":"color:#f2f2f7";
           return '<div style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid #2c2c2e">' +
             '<span style="width:8px;height:8px;border-radius:50%;background:'+nokta+';flex-shrink:0"></span>' +
-            '<div style="flex:1;font-size:13px;font-weight:600;'+firmaStil+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+is.firma+
+            '<div style="flex:1;font-size:13px;font-weight:600;'+firmaStil+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+htmlKacis(is.firma)+
               (is.kaynak==="talep"?' <span style="font-size:8px;background:#ff9f0a22;color:#ff9f0a;border-radius:4px;padding:1px 4px">🚗</span>':"")+
               (is.kaynak==="nakliye"?' <span style="font-size:8px;background:#ab47bc22;color:#ab47bc;border-radius:4px;padding:1px 4px">🚚</span>':"")+
             '</div>' +
@@ -4284,9 +4288,9 @@ function renderNakliyeListe() {
       return '<div class="card" style="border-left:3px solid #0a84ff;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
         '<div style="flex:1">' +
-        '<div style="font-weight:700;font-size:14px">📍 '+n.sevk_adresi+'</div>' +
+        '<div style="font-weight:700;font-size:14px">📍 '+htmlKacis(n.sevk_adresi)+'</div>' +
         '<div style="font-size:11px;color:#636366">📅 '+n.tarih+'</div>' +
-        (n.aciklama?'<div style="font-size:11px;color:#636366">💬 '+n.aciklama+'</div>':"") +
+        (n.aciklama?'<div style="font-size:11px;color:#636366">💬 '+htmlKacis(n.aciklama)+'</div>':"") +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">' +
         (KUL.rol==="admin"
@@ -4512,9 +4516,9 @@ function kazaDetay(id) {
   var html =
     '<div style="margin-bottom:8px"><b>Ağırlık:</b> <span style="color:'+renkAgirlik(k.agirlik)+'">'+(k.agirlik||"-")+'</span></div>' +
     '<div style="margin-bottom:8px"><b>📅 Tarih:</b> '+(k.tarih||"-")+'</div>' +
-    (k.kisi?'<div style="margin-bottom:8px"><b>👤 Kişi:</b> '+k.kisi+'</div>':"") +
-    (k.arac?'<div style="margin-bottom:8px"><b>🚗 Araç:</b> '+k.arac+'</div>':"") +
-    '<div style="margin-top:12px;background:#2c2c2e;border-radius:10px;padding:12px;word-break:break-word;overflow-wrap:break-word"><b>Açıklama:</b><br>'+(k.aciklama||"(açıklama yok)")+'</div>';
+    (k.kisi?'<div style="margin-bottom:8px"><b>👤 Kişi:</b> '+htmlKacis(k.kisi)+'</div>':"") +
+    (k.arac?'<div style="margin-bottom:8px"><b>🚗 Araç:</b> '+htmlKacis(k.arac)+'</div>':"") +
+    '<div style="margin-top:12px;background:#2c2c2e;border-radius:10px;padding:12px;word-break:break-word;overflow-wrap:break-word"><b>Açıklama:</b><br>'+htmlKacis(k.aciklama||"(açıklama yok)")+'</div>';
   document.getElementById("kaza-modal-icerik").innerHTML = html;
   // Görüntüleme moduna al
   document.getElementById("kaza-modal-icerik").style.display = "block";
@@ -4616,10 +4620,10 @@ async function talepSorgula() {
         '<div style="font-size:12px;color:#636366">'+t.tarih+' • '+t.saat+'</div>' +
         '<span style="background:'+renk+'22;color:'+renk+';border:1px solid '+renk+';border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">'+icon+' '+t.durum+'</span>' +
         '</div>' +
-        '<div style="font-size:13px;font-weight:700;color:#f2f2f7;margin-bottom:3px">📍 '+t.nereye+'</div>' +
-        (t.departman?'<div style="font-size:11px;color:#636366">🏢 '+t.departman+'</div>':'') +
-        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':'') +
-        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="margin-top:8px;background:#ff453a18;border:1px solid #ff453a55;border-radius:8px;padding:8px;font-size:12px;color:#ff453a"><b>Red Gerekçesi:</b> '+t.red_nedeni+'</div>':'') +
+        '<div style="font-size:13px;font-weight:700;color:#f2f2f7;margin-bottom:3px">📍 '+htmlKacis(t.nereye)+'</div>' +
+        (t.departman?'<div style="font-size:11px;color:#636366">🏢 '+htmlKacis(t.departman)+'</div>':'') +
+        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+htmlKacis(t.aciklama)+'</div>':'') +
+        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="margin-top:8px;background:#ff453a18;border:1px solid #ff453a55;border-radius:8px;padding:8px;font-size:12px;color:#ff453a"><b>Red Gerekçesi:</b> '+htmlKacis(t.red_nedeni)+'</div>':'') +
         '</div>';
     });
     document.getElementById("sorgula-sonuc").innerHTML = html;
@@ -4719,6 +4723,7 @@ function irsaliyeTab(t) {
   if(t==="ekle" && !window._irsaliyeYetkili) {
     var girilen = prompt("İrsaliye ekleme şifresi:");
     if(girilen===null) return; // vazgeçti
+    if(!IRSALIYE_PIN){ alert("İrsaliye şifresi tanımlı değil. Yöneticiyle görüşün."); return; }
     if(girilen!==IRSALIYE_PIN) { alert("❌ Hatalı şifre!"); return; }
     window._irsaliyeYetkili = true;
   }
@@ -4737,6 +4742,19 @@ async function irsaliyeYukle() {
     if(res && res.data) { DB.irsaliyeler = res.data; renderIrsaliyeList(); }
   } catch(e) { DB.irsaliyeler = DB.irsaliyeler||[]; }
 }
+// Güvenlik: kullanıcı verisini HTML'e basmadan önce kaçış
+function htmlKacis(s) {
+  return String(s==null?"":s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+// Güvenlik: sadece http/https linklere izin ver (javascript: vs. engelle)
+function guvenliLink(u) {
+  u = String(u||"").trim();
+  if(/^https?:\/\//i.test(u)) return htmlKacis(u);
+  return "#";
+}
+
 function renderIrsaliyeList() {
   var kutu = document.getElementById("irsaliye-liste-icerik");
   if(!kutu) return;
@@ -4757,13 +4775,13 @@ function renderIrsaliyeList() {
     return '<div style="background:#2c2c2e;border:1px solid #48484a;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
       '<div style="flex:1;min-width:0">' +
-      (i.kategori?'<span style="display:inline-block;font-size:10px;background:#7e57c233;color:#b39ddb;border-radius:5px;padding:2px 7px;margin-bottom:5px;font-weight:600">'+i.kategori+'</span>':"") +
-      '<div style="font-weight:700;font-size:14px;color:#f2f2f7">'+(i.firma||"-")+'</div>' +
-      '<div style="font-size:11px;color:#636366;margin-top:2px">📅 '+(i.tarih||"-")+(i.no?' • No: '+i.no:"")+'</div>' +
-      (i.aciklama?'<div style="font-size:12px;color:#aeaeb2;margin-top:6px;word-break:break-word">'+i.aciklama+'</div>':"") +
+      (i.kategori?'<span style="display:inline-block;font-size:10px;background:#7e57c233;color:#b39ddb;border-radius:5px;padding:2px 7px;margin-bottom:5px;font-weight:600">'+htmlKacis(i.kategori)+'</span>':"") +
+      '<div style="font-weight:700;font-size:14px;color:#f2f2f7">'+htmlKacis(i.firma||"-")+'</div>' +
+      '<div style="font-size:11px;color:#636366;margin-top:2px">📅 '+htmlKacis(i.tarih||"-")+(i.no?' • No: '+htmlKacis(i.no):"")+'</div>' +
+      (i.aciklama?'<div style="font-size:12px;color:#aeaeb2;margin-top:6px;word-break:break-word">'+htmlKacis(i.aciklama)+'</div>':"") +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">' +
-      '<a href="'+(i.foto||"#")+'" target="_blank" style="background:#7e57c2;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📷 Gör</a>' +
+      '<a href="'+guvenliLink(i.foto)+'" target="_blank" rel="noopener noreferrer" style="background:#7e57c2;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📷 Gör</a>' +
       (window._irsaliyeYetkili?'<button onclick="irsaliyeSil('+i.id+')" style="background:none;border:1px solid #ff453a;border-radius:8px;color:#ff453a;font-size:11px;cursor:pointer;padding:5px 10px;white-space:nowrap">🗑️ Sil</button>':"") +
       '</div>' +
       '</div></div>';
@@ -4788,7 +4806,7 @@ async function irsaliyeGonder() {
   var aciklama = document.getElementById("irs-aciklama").value.trim();
   var mesaj = document.getElementById("irsaliye-mesaj");
   if(!kategori||!tarih||!firma||!foto){ mesaj.style.color="#ff453a"; mesaj.textContent="Kategori, tarih, firma ve fotoğraf linki zorunlu!"; return; }
-  if(foto.indexOf("http")!==0){ mesaj.style.color="#ff453a"; mesaj.textContent="Geçerli bir link girin (http ile başlamalı)."; return; }
+  if(!/^https?:\/\//i.test(foto)){ mesaj.style.color="#ff453a"; mesaj.textContent="Geçerli bir link girin (http:// veya https:// ile başlamalı)."; return; }
   try {
     var yeni = {no, kategori, tarih, firma, foto, aciklama};
     var res = await supa.from('irsaliyeler').insert(yeni).select().single();
@@ -4887,11 +4905,11 @@ function renderTalepler() {
       return '<div class="card" style="border-left:3px solid '+renkBorder+';margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
         '<div>' +
-        '<div style="font-weight:700;font-size:14px">'+t.isim+'</div>' +
-        '<div style="font-size:12px;color:#aeaeb2">🏢 '+t.departman+'  •  📍 '+t.nereye+'</div>' +
+        '<div style="font-weight:700;font-size:14px">'+htmlKacis(t.isim)+'</div>' +
+        '<div style="font-size:12px;color:#aeaeb2">🏢 '+htmlKacis(t.departman)+'  •  📍 '+htmlKacis(t.nereye)+'</div>' +
         '<div style="font-size:11px;color:#636366">📅 '+t.tarih+' • 🕐 '+t.saat+'</div>' +
-        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+t.aciklama+'</div>':"") +
-        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="font-size:11px;color:#ff453a;margin-top:4px">🚫 Red: '+t.red_nedeni+'</div>':"") +
+        (t.aciklama?'<div style="font-size:11px;color:#636366">💬 '+htmlKacis(t.aciklama)+'</div>':"") +
+        (t.durum==="Reddedildi"&&t.red_nedeni?'<div style="font-size:11px;color:#ff453a;margin-top:4px">🚫 Red: '+htmlKacis(t.red_nedeni)+'</div>':"") +
         '</div>' +
         '<span class="badge '+badgeClass+'">'+t.durum+'</span>' +
         '</div>' +
