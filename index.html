@@ -219,6 +219,57 @@ textarea{resize:vertical;}
 </div>
 
 
+<!-- İRSALİYE TAKİP -->
+<div id="irsaliye-screen" style="display:none;min-height:100vh;flex-direction:column;align-items:center;padding:24px;position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:linear-gradient(135deg,#0a0a0f 0%,#111118 50%,#0d0d15 100%);z-index:0;"></div>
+  <div style="position:relative;z-index:1;width:100%;max-width:480px">
+    <button onclick="irsaliyeEkraniGizle()" style="background:none;border:none;color:#636366;font-size:13px;margin-bottom:16px;padding:0;cursor:pointer">← Geri</button>
+    <div style="font-size:20px;font-weight:800;margin-bottom:12px;color:#f2f2f7">📦 İrsaliye Takip</div>
+    <div style="display:flex;background:#2c2c2e;border-radius:10px;padding:4px;gap:4px;margin-bottom:14px">
+      <button onclick="irsaliyeTab('liste')" id="tab-irs-liste" style="flex:1;padding:8px;border:none;border-radius:8px;background:#7e57c2;color:#fff;font-size:12px;font-weight:600;cursor:pointer">📋 İrsaliyeler</button>
+      <button onclick="irsaliyeTab('ekle')" id="tab-irs-ekle" style="flex:1;padding:8px;border:none;border-radius:8px;background:transparent;color:#636366;font-size:12px;font-weight:600;cursor:pointer">➕ Yeni Ekle</button>
+    </div>
+
+    <div id="irsaliye-liste-panel">
+      <div class="field" style="margin-bottom:12px">
+        <input type="text" id="irs-ara" oninput="renderIrsaliyeList()" placeholder="🔍 Firma veya no ara..." style="width:100%;box-sizing:border-box"/>
+      </div>
+      <div id="irsaliye-liste-icerik"></div>
+    </div>
+
+    <div id="irsaliye-ekle-panel" style="display:none">
+      <div class="field" style="margin-bottom:12px">
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">İrsaliye No</label>
+        <input type="text" id="irs-no" placeholder="örn: 2026-A-1234"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="field">
+          <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Tarih *</label>
+          <input type="date" id="irs-tarih"/>
+        </div>
+        <div class="field">
+          <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Firma *</label>
+          <input type="text" id="irs-firma"/>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:8px">
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Fotoğraf Linki (hızlıresim) *</label>
+        <input type="text" id="irs-foto" placeholder="https://hizliresim.com/..."/>
+      </div>
+      <div style="background:#2c2c2e;border:1px solid #48484a;border-radius:8px;padding:10px 12px;font-size:11px;color:#aeaeb2;margin-bottom:12px;line-height:1.6">
+        📌 İrsaliyenin fotoğrafını <b>hizliresim.com</b>'a yükle, çıkan linki buraya yapıştır.
+      </div>
+      <div class="field" style="margin-bottom:16px">
+        <label style="font-size:11px;color:#636366;font-weight:600;display:block;margin-bottom:5px">Açıklama</label>
+        <textarea id="irs-aciklama" rows="2" placeholder="Ek not (opsiyonel)..."></textarea>
+      </div>
+      <div id="irsaliye-mesaj" style="font-size:12px;margin-bottom:8px;min-height:18px"></div>
+      <button onclick="irsaliyeGonder()" style="width:100%;padding:14px;background:#7e57c2;border:none;border-radius:10px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">📦 İrsaliyeyi Kaydet</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- LOGIN -->
 <div id="login-screen">
   <div id="login-bg">
@@ -252,6 +303,7 @@ textarea{resize:vertical;}
       <button class="login-btn" id="login-admin-btn" onclick="loginMod('admin')">🔑 Yönetici Girişi</button>
       <button class="login-btn" id="login-yakit-btn" onclick="loginMod('yakit')">⛽ Yakıt Personeli</button>
       <button class="login-btn" style="background:#ff453a;color:#fff;" onclick="talepEkraniGoster()">🚗 Araç Talebi</button>
+      <button class="login-btn" style="background:#7e57c2;color:#fff;" onclick="irsaliyeEkraniGoster()">📦 İrsaliye Takip</button>
     </div>
     <div id="login-form" style="display:none;width:100%">
       <button id="btn-geri" onclick="loginGeri()">← Geri</button>
@@ -4613,6 +4665,82 @@ function talepEkraniGizle() {
   document.getElementById("talep-screen").style.display = "none";
   document.getElementById("login-screen").style.display = "flex";
   zoomKapat(); // login ekranında zoom kapalı
+}
+
+// ═══════════════ İRSALİYE TAKİP ═══════════════
+function irsaliyeEkraniGoster() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("irsaliye-screen").style.display = "flex";
+  zoomAc();
+  irsaliyeTab("liste");
+  // Tarih bugünle dolsun
+  var s=new Date(), t=document.getElementById("irs-tarih");
+  if(t) t.value = s.getFullYear()+"-"+String(s.getMonth()+1).padStart(2,"0")+"-"+String(s.getDate()).padStart(2,"0");
+  irsaliyeYukle();
+}
+function irsaliyeEkraniGizle() {
+  document.getElementById("irsaliye-screen").style.display = "none";
+  document.getElementById("login-screen").style.display = "flex";
+  zoomKapat();
+}
+function irsaliyeTab(t) {
+  var liste = t==="liste";
+  document.getElementById("irsaliye-liste-panel").style.display = liste?"block":"none";
+  document.getElementById("irsaliye-ekle-panel").style.display = liste?"none":"block";
+  document.getElementById("tab-irs-liste").style.background = liste?"#7e57c2":"transparent";
+  document.getElementById("tab-irs-liste").style.color = liste?"#fff":"#636366";
+  document.getElementById("tab-irs-ekle").style.background = !liste?"#7e57c2":"transparent";
+  document.getElementById("tab-irs-ekle").style.color = !liste?"#fff":"#636366";
+  if(liste) renderIrsaliyeList();
+}
+async function irsaliyeYukle() {
+  try {
+    var res = await supa.from('irsaliyeler').select('*').order('tarih',{ascending:false});
+    if(res && res.data) { DB.irsaliyeler = res.data; renderIrsaliyeList(); }
+  } catch(e) { DB.irsaliyeler = DB.irsaliyeler||[]; }
+}
+function renderIrsaliyeList() {
+  var kutu = document.getElementById("irsaliye-liste-icerik");
+  if(!kutu) return;
+  var ara = (document.getElementById("irs-ara").value||"").toLowerCase().trim();
+  var liste = (DB.irsaliyeler||[]).filter(function(i){
+    if(!ara) return true;
+    return (i.firma||"").toLowerCase().indexOf(ara)>=0 || (i.no||"").toLowerCase().indexOf(ara)>=0;
+  });
+  if(liste.length===0){ kutu.innerHTML = '<div style="text-align:center;color:#636366;padding:30px 0;font-size:13px">📦 İrsaliye kaydı yok.</div>'; return; }
+  kutu.innerHTML = liste.map(function(i){
+    return '<div style="background:#2c2c2e;border:1px solid #48484a;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+      '<div style="flex:1;min-width:0">' +
+      '<div style="font-weight:700;font-size:14px;color:#f2f2f7">'+(i.firma||"-")+'</div>' +
+      '<div style="font-size:11px;color:#636366;margin-top:2px">📅 '+(i.tarih||"-")+(i.no?' • No: '+i.no:"")+'</div>' +
+      (i.aciklama?'<div style="font-size:12px;color:#aeaeb2;margin-top:6px;word-break:break-word">'+i.aciklama+'</div>':"") +
+      '</div>' +
+      '<a href="'+(i.foto||"#")+'" target="_blank" style="background:#7e57c2;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0">📷 Gör</a>' +
+      '</div></div>';
+  }).join("");
+}
+async function irsaliyeGonder() {
+  var no = document.getElementById("irs-no").value.trim();
+  var tarih = document.getElementById("irs-tarih").value;
+  var firma = document.getElementById("irs-firma").value.trim();
+  var foto = document.getElementById("irs-foto").value.trim();
+  var aciklama = document.getElementById("irs-aciklama").value.trim();
+  var mesaj = document.getElementById("irsaliye-mesaj");
+  if(!tarih||!firma||!foto){ mesaj.style.color="#ff453a"; mesaj.textContent="Tarih, firma ve fotoğraf linki zorunlu!"; return; }
+  if(foto.indexOf("http")!==0){ mesaj.style.color="#ff453a"; mesaj.textContent="Geçerli bir link girin (http ile başlamalı)."; return; }
+  try {
+    var yeni = {no, tarih, firma, foto, aciklama};
+    var res = await supa.from('irsaliyeler').insert(yeni).select().single();
+    DB.irsaliyeler = DB.irsaliyeler||[];
+    DB.irsaliyeler.unshift(res.data||yeni);
+    mesaj.style.color="#30d158"; mesaj.textContent="✅ İrsaliye kaydedildi!";
+    document.getElementById("irs-no").value="";
+    document.getElementById("irs-firma").value="";
+    document.getElementById("irs-foto").value="";
+    document.getElementById("irs-aciklama").value="";
+    setTimeout(function(){ mesaj.textContent=""; irsaliyeTab("liste"); }, 1000);
+  } catch(e){ mesaj.style.color="#ff453a"; mesaj.textContent="Hata: "+(e.message||"kaydedilemedi"); }
 }
 
 async function talепGonder() {
